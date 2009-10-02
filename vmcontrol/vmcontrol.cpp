@@ -9,19 +9,19 @@ using std::string;
 
 #include "vix.h"
 
-static const char *USAGE = " [-u] [-d] <vmpath>";
-static const char *OPT_STR = "ud";
-static const char *USER = "vmuser";
-static const char *PASSWORD = "vmu2009";
+static const char *USAGE = " [-U] user [-P] password [-u] [-d] <vmpath>";
+static const char *OPT_STR = "udU:P:";
 static const char *HOSTNAME = "http://127.0.0.1:8222/sdk";
 
 bool powerVMOn(VixHandle);
 bool powerVMOff(VixHandle);
-VixHandle getVixHandle(char *);
+VixHandle getVixHandle(char *, char *, char *);
 
 int main(int argc, char *argv[]) {
     bool powerOn = false;
     bool powerOff = false;
+    char *user = NULL;
+    char *password = NULL;
 
     int arg;
     while( (arg = getopt(argc, argv, OPT_STR)) != -1 ) {
@@ -32,13 +32,19 @@ int main(int argc, char *argv[]) {
 	    case 'd':
 		powerOff = true;
 		break;
+	    case 'U':
+		user = optarg;
+		break;
+	    case 'P':
+		password = optarg;
+		break;
 	    default:
 		cerr << "Usage: " << argv[0] << USAGE << endl;
 		return 1;
 	}
     }
 
-    if( !powerOn && !powerOff ) {
+    if( (!powerOn && !powerOff) || !user || !password) {
 	cerr << "Usage: " << argv[0] << USAGE << endl;
 	return 1;
     }
@@ -50,7 +56,7 @@ int main(int argc, char *argv[]) {
 
     // First, get a handle to the VM
     VixHandle vmHandle = VIX_INVALID_HANDLE;
-    if( (vmHandle = getVixHandle(argv[optind])) == VIX_INVALID_HANDLE ) {
+    if( (vmHandle = getVixHandle(argv[optind], user, password)) == VIX_INVALID_HANDLE ) {
 	return 1;
     }
 
@@ -67,7 +73,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-VixHandle getVixHandle(char *path) {
+VixHandle getVixHandle(char *path, char *user, char *password) {
     VixHandle hostHandle = VIX_INVALID_HANDLE;
     VixHandle jobHandle = VIX_INVALID_HANDLE;
     VixHandle vmHandle = VIX_INVALID_HANDLE;
@@ -79,8 +85,8 @@ VixHandle getVixHandle(char *path) {
 			       VIX_SERVICEPROVIDER_VMWARE_VI_SERVER,
 			       HOSTNAME, // hostName
 			       0, // hostPort
-			       USER, // userName
-			       PASSWORD, // password,
+			       user, // userName
+			       password, // password,
 			       0, // options
 			       VIX_INVALID_HANDLE, // propertyListHandle
 			       NULL, // callbackProc
@@ -113,7 +119,8 @@ VixHandle getVixHandle(char *path) {
 		      VIX_PROPERTY_NONE);
 
     if (VIX_OK != err) {
-	cerr << "Error getting vm handle: " << Vix_GetErrorText(err, NULL) << endl;
+	cerr << "Error getting vm handle: " 
+	     << Vix_GetErrorText(err, NULL) << endl;
 	return VIX_INVALID_HANDLE;
     }
      
@@ -138,7 +145,8 @@ bool powerVMOn(VixHandle vmHandle) {
      
     err = VixJob_Wait(jobHandle, VIX_PROPERTY_NONE);
     if (VIX_OK != err) {
-	cerr << "Error powering on the VM: " << Vix_GetErrorText(err, NULL) << endl;
+	cerr << "Error powering on the VM: " 
+	     << Vix_GetErrorText(err, NULL) << endl;
 	return false;
     }
 
@@ -161,7 +169,8 @@ bool powerVMOff(VixHandle vmHandle) {
 			       NULL); // clientData
     err = VixJob_Wait(jobHandle, VIX_PROPERTY_NONE);
     if (VIX_OK != err) {
-	cerr << "Error powering off the VM: " << Vix_GetErrorText(err, NULL) << endl;
+	cerr << "Error powering off the VM: " 
+	     << Vix_GetErrorText(err, NULL) << endl;
     }
 
     Vix_ReleaseHandle(jobHandle);
