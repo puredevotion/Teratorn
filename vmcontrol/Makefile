@@ -13,15 +13,29 @@ CPP_ARGS = -Wall -g
 VIX_INC = /usr/include/vmware-vix
 VIX_LINK = -lvixAllProducts -ldl
 
+CPULIMIT_LINK = -lrt
+
 all: $(binaries)
 
-vmcontrol: vmcontrol.o
-	$(CPP) $(CPP_ARGS) -o vmcontrol vmcontrol.o $(VIX_LINK)
+vmcontrol: vmcontrol.o cpulimit.o vixint.o util.o
+	$(CPP) $(CPP_ARGS) -o vmcontrol vmcontrol.o cpulimit.o vixint.o util.o $(VIX_LINK) $(CPULIMIT_LINK)
 
-vmcontrol.o: vmcontrol.cpp
+vmcontrol.o: vmcontrol.cpp cpulimit.h vixint.h 
 	$(CPP) $(CPP_ARGS) -I$(VIX_INC) -c vmcontrol.cpp
+
+cpulimit.o: cpulimit.c cpulimit.h 
+	$(CPP) $(CPP_ARGS) -c cpulimit.c
+
+vixint.o: vixint.cpp vixint.h util.h
+	$(CPP) $(CPP_ARGS) -I$(VIX_INC) -c vixint.cpp
+
+util.o: util.cpp util.h
+	$(CPP) $(CPP_ARGS) -c util.cpp
 
 .PHONY: clean
 
 clean: 
 	rm -f *.o *.ls *.hex *.class $(binaries)
+
+test: vmcontrol
+	sudo ./vmcontrol -U vmuser -l 20 -u emdebian/emdebian.vmx
