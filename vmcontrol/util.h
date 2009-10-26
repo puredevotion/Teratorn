@@ -19,6 +19,11 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
+#include <iostream>
+
+#define L_LOG_STR(function) \
+    "%s[%d]%s: %s", __FILE__, __LINE__, function, strerror(errno)
+
 bool pgrep(std::string&);
 int systemExec(std::string&);
 bool startServices(std::string &, bool &);
@@ -26,6 +31,7 @@ pid_t getVMPid(char *);
 char *get_password();
 int write_all(int, void *, int);
 int read_all(int, void *, int);
-void termChild(pid_t, char *);
+int send_all(int, void *, int);
+int get_socket(struct addrinfo *addr_list, bool should_bind);
 
 #endif

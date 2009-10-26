@@ -34,6 +34,12 @@ using std::endl;
 #include <sys/wait.h>
 #include <termios.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include <libdaemon/dlog.h>
 
 #include "util.h"
 
@@ -63,28 +69,27 @@ int systemExec(string &command) {
 	return WEXITSTATUS(status);
     }
 
-    perror("system");
-    return status;
+    daemon_log(LOG_ERR, L_LOG_STR("system"));
+    return -1;
 }
 
 bool startServices(string &errMsg, bool &started) {
     // First, check if the services are already running
     if( !pgrep(const_cast<string&>(AUTHD_CMD)) ) {
 	started = true;
-	cerr << "VMWare core services not running, now starting..." << endl;
+	daemon_log(LOG_INFO, "VMWare core services not running, restarting...");
 	if( systemExec(const_cast<string&>(SERVICE_START_CORE)) ) {
-	    errMsg = "failed to start VMWare core services: " + 
-		string(strerror(errno));
+	    errMsg = "failed to start VMWare core services: ";
 	    return false;
 	}
     }
 
     if( !pgrep(const_cast<string&>(HOSTD_CMD)) ) {
 	started = true;
-	cerr << "VMWare management services not running, now starting..." << endl;
+	daemon_log(LOG_INFO, 
+		"VMWare management services not running, restarting...");
 	if( systemExec(const_cast<string&>(SERVICE_START_MGMT)) ) {
-	    errMsg = "failed to start VMWare management services: " +
-		string(strerror(errno));
+	    errMsg = "failed to start VMWare management services: ";
 	    return false;
 	}
     }
@@ -96,7 +101,7 @@ pid_t getVMPid(char *vmPath) {
     // Search for VMWare running processes info
     DIR *vmrun;
     if( (vmrun = opendir(VMRUN_PATH.c_str())) == NULL ) {
-	perror("opendir");
+	daemon_log(LOG_ERR, L_LOG_STR("opendir"));
 	return -1;
     }
 
@@ -110,14 +115,16 @@ pid_t getVMPid(char *vmPath) {
     struct dirent **resultp = (struct dirent **)malloc(sizeof(struct dirent *));
 
     if( resultp == NULL ) {
-	perror("malloc");
+	daemon_log(LOG_ERR, L_LOG_STR("malloc"));
+	closedir(vmrun);
 	return -1;
     }
 
     do{
 	if( readdir_r(vmrun, &entry, resultp) ) {
-	    perror("readdir_r");
+	    daemon_log(LOG_ERR, L_LOG_STR("readdir_r"));
 	    free(resultp);
+	    closedir(vmrun);
 	    return -1;
 	}
 
@@ -126,8 +133,9 @@ pid_t getVMPid(char *vmPath) {
 	    string newPath = VMRUN_PATH + string(entry.d_name);
 	    DIR *vmvmx;
 	    if( (vmvmx = opendir(newPath.c_str())) == NULL ) {
-		perror("opendir");
+		daemon_log(LOG_ERR, L_LOG_STR("opendir"));
 		free(resultp);
+		closedir(vmrun);
 		return -1;
 	    }
 
@@ -136,19 +144,23 @@ pid_t getVMPid(char *vmPath) {
 		(struct dirent **)malloc(sizeof(struct dirent *));
 
 	    if( innerResp == NULL ) {
-		perror("malloc");
+		daemon_log(LOG_ERR, L_LOG_STR("malloc"));
+		closedir(vmrun);
+		closedir(vmvmx);
 		return -1;
 	    }
 
 	    do {
 		if( readdir_r(vmvmx, &innerEnt, innerResp) ) {
-		    perror("readdir_r");
+		    daemon_log(LOG_ERR, L_LOG_STR("readdir_r"));
 		    free(innerResp);
 		    free(resultp);
+		    closedir(vmrun);
+		    closedir(vmvmx);
 		    return -1;
 		}
 
-		if(    innerResp != NULL 
+		if(    *innerResp != NULL 
 		    && innerEnt.d_type == DT_LNK
 		    && strstr(innerEnt.d_name, VMX_CONFIG.c_str()) != NULL )
 		{
@@ -158,16 +170,20 @@ pid_t getVMPid(char *vmPath) {
 		    struct stat linkStat;
 
 		    if( stat(linkPath.c_str(), &linkStat) ) {
-			perror("stat");
+			daemon_log(LOG_ERR, L_LOG_STR("stat"));
 			free(innerResp);
 			free(resultp);
+			closedir(vmrun);
+			closedir(vmvmx);
 			return -1;
 		    }
 
 		    char *linkTarget = (char *)malloc(linkStat.st_size);
 
 		    if( linkTarget == NULL ) {
-			perror("malloc");
+			daemon_log(LOG_ERR, L_LOG_STR("stat"));
+			closedir(vmrun);
+			closedir(vmvmx);
 			return -1;
 		    }
 
@@ -175,15 +191,18 @@ pid_t getVMPid(char *vmPath) {
 		    if( (linkSize = readlink(linkPath.c_str(), linkTarget,
 				    linkStat.st_size)) == -1 ) 
 		    {
-			perror("readlink");
+			daemon_log(LOG_ERR, L_LOG_STR("readlink"));
 			free(innerResp);
 			free(resultp);
 			free(linkTarget);
+			closedir(vmrun);
+			closedir(vmvmx);
 			return -1;
 		    }
 
 		    // Found the VM, the directory entry contains the PID
-		    char *parsePtr = strstr(entry.d_name, VMX_PID_DELIM.c_str());
+		    char *parsePtr = strstr(entry.d_name, 
+			    VMX_PID_DELIM.c_str());
 
 		    // This means the directory structure has changed
 		    assert(parsePtr != NULL);
@@ -194,13 +213,17 @@ pid_t getVMPid(char *vmPath) {
 		    free(linkTarget);
 		    free(innerResp);
 		    free(resultp);
+		    closedir(vmrun);
+		    closedir(vmvmx);
 		    return strtol(parsePtr, NULL, 10);
 		} 
-	    }while(innerResp != NULL);
+	    }while(*innerResp != NULL);
 	    free(innerResp);
+	    closedir(vmvmx);
 	}
     }while(resultp != NULL);
     free(resultp);
+    closedir(vmrun);
 
     return -1;
 }
@@ -210,7 +233,7 @@ char *get_password() {
     struct termios orig, no_echo;
 
     if( tcgetattr(fileno(stdin), &orig) == -1 ) {
-	perror("tcgetattr");
+	daemon_log(LOG_ERR, L_LOG_STR("tcgettr"));
 	return NULL;
     }
 
@@ -218,7 +241,7 @@ char *get_password() {
     no_echo.c_lflag &= ~ECHO;
 
     if( tcsetattr(fileno(stdin), TCSAFLUSH, &no_echo) == -1 ) {
-	perror("tcsetattr");
+	daemon_log(LOG_ERR, L_LOG_STR("tcsetattr"));
 	return NULL;
     }
 
@@ -226,7 +249,7 @@ char *get_password() {
     char *password = (char *)malloc(PASS_INIT_SIZE*sizeof(char));
 
     if( password == NULL ) {
-	perror("malloc");
+	daemon_log(LOG_ERR, L_LOG_STR("malloc"));
 	return NULL;
     }
 
@@ -237,7 +260,7 @@ char *get_password() {
 	if( size >= prev_size ) password = (char *)realloc(password, size*2);
 
 	if( password == NULL ) {
-	    perror("realloc");
+	    daemon_log(LOG_ERR, L_LOG_STR("realloc"));
 	    return NULL;
 	}
 
@@ -246,7 +269,7 @@ char *get_password() {
 
     // Turn echo back on
     if( tcsetattr(fileno(stdin), TCSAFLUSH, &orig) == -1 ) {
-	perror("tcsetattr");
+	daemon_log(LOG_ERR, L_LOG_STR("tcsetattr"));
 	if(password) free(password);
 	return NULL;
     }
@@ -257,12 +280,14 @@ char *get_password() {
 }
 
 int write_all(int fd, void *buf, int size) {
+    char *lbuf = static_cast<char *>(buf);
     int num_write = 0, length;
     while( num_write < size ) {
-        length = write(fd, buf, size - num_write);
+        length = write(fd, lbuf + num_write, size - num_write);
 
         // Attempt to finish write if the call was interrupted
         if( length == -1 && errno != EINTR ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("write"));
             return 0;
         }else if( length != -1 ) num_write += length;
     }
@@ -270,18 +295,36 @@ int write_all(int fd, void *buf, int size) {
     return 1;
 }
 
+int send_all(int socket, void *buf, int length) {
+    char *lbuf = static_cast<char *>(buf);
+    int total_sent = 0, num_sent = -1;
+    while( total_sent < length && num_sent != 0 ) {
+	num_sent = send(socket, lbuf + total_sent,
+		length - total_sent, 0);
+
+	if( num_sent == -1 && errno != EINTR ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("send"));
+	    return 0;
+	}else if( num_sent != -1 ) total_sent += num_sent;
+    }
+
+    return 1;
+}
+
 int read_all(int fd, void *buf, int size) {
+    char *lbuf = static_cast<char *>(buf);
     int num_read = 0, length = -1;
     while( num_read < size && 
 	   length != 0 ) 
     {
-	length = read(fd, buf, size - num_read);
+	length = read(fd, lbuf + num_read, size - num_read);
 
 	if( length == 0 ) {
 	    return 0;
 	}
 
 	if( length == -1 && errno != EINTR ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("read"));
 	    return -1;
 	}else if( length != -1 ) num_read += length;
     }
@@ -289,35 +332,34 @@ int read_all(int fd, void *buf, int size) {
     return 1;
 }
 
-void termChild(pid_t pid, char *desc) {
-    if( pid > 0 ) {
-	if( kill(pid, SIGINT) == -1 ) {
-	    if( errno != ESRCH ) { // ESRCH == no such child, it already finished
-		perror("kill");
-	    }
-	    return;
-	}
-
-	int status;
-	if( waitpid(pid, &status, 0) == -1 ) {
-	    perror("waitpid");
-	    return;
-	}
-
-	if( WIFSIGNALED(status) ) {
-#ifdef WCOREDUMP
-	    if( WCOREDUMP(status) ) {
-		cerr << desc << " dumped core." << endl;
-	    }else{
-		cerr << desc << " terminated by: " << strsignal(WTERMSIG(status))
-		     << endl;
-	    }
-#else
-	    cerr << desc << " terminated by: " << strsignal(WTERMSIG(status))
-		 << endl;
-#endif
-	}else if( WIFEXITED(status) ) {
-	    cerr << desc << " exited[ " << WEXITSTATUS(status) << "]" << endl;
-	}
+int get_socket(struct addrinfo *addr_list, bool should_bind) {
+    int sock_fd;
+    if( ( sock_fd = socket(addr_list->ai_family, addr_list->ai_socktype,
+		    addr_list->ai_protocol) ) == -1 ) {
+	daemon_log(LOG_ERR, L_LOG_STR("socket"));
+	return -1; 
     }
+
+    daemon_log(LOG_INFO, "Socket created: fd=%d", sock_fd);
+
+    int trueval = 1;
+    if (setsockopt(sock_fd,SOL_SOCKET,SO_REUSEADDR,&trueval,
+		sizeof(int)) == -1) 
+    {
+	daemon_log(LOG_ERR, L_LOG_STR("setsockopt"));
+	return -1;
+    }
+
+    if(should_bind) { 
+	if( bind(sock_fd, addr_list->ai_addr, addr_list->ai_addrlen) == -1 ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("bind"));
+	    return -1;
+	}
+
+	struct sockaddr_in *addr = (struct sockaddr_in *) addr_list->ai_addr;
+	daemon_log(LOG_INFO, "Bound to %d on %s",
+		ntohs(addr->sin_port), inet_ntoa(addr->sin_addr));
+    }
+
+    return sock_fd;
 }

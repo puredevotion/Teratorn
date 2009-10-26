@@ -21,12 +21,17 @@
 #include <cstdio>
 #include <cerrno>
 #include <cstdlib>
+#include <map>
+#include <set>
 using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
+using std::map;
+using std::set;
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
 #include <string.h>
@@ -35,380 +40,82 @@ using std::string;
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+// libdaemon includes
+#include <libdaemon/daemon.h>
 
 // Project includes
 #include "cpulimit.h"
 #include "vixint.h"
 #include "util.h"
 
-enum vm_cmd {
-    VM_UP,
-    VM_DOWN
+/* 
+ * The commands received via a network interface take on the following format:
+ * 
+ * USER username PASS password CMD vm_cmd \r\n
+ *
+ * Take note of the use of a single space as a delimiter between all tokens.
+ */
+
+typedef char vm_cmd;
+enum {
+    VM_UP = 'U',
+    VM_DOWN = 'D'
 };
 
-// TODO daemonize, syslog, config file, client
+// Fields
+static const string USER = "USER";
+static const string PASS = "PASS";
+static const string CMD = "CMD";
 
-static const char *USAGE = " [-H hostname] [-U user] [-l limit] <-u|-d> <vmpath>";
-static const char *OPT_STR = "H:udU:l:";
+// Responses
+static const string BAD = "BAD";
+static const string OK = "OK";
+
+// Delimiter
+static const string END = "\r\n";
+
+// TODO ssl, config file, commands (client)
+
+static const char *USAGE = 
+" [-n] [-c config] [-H hostname] [-p port] [-r] -U user -l limit <-u|-d> <vmpath>";
+static const char *OPT_STR = "H:udU:l:nrp:c:";
 static const char *DEFAULT_HOST = "http://127.0.0.1:8222/sdk";
-static const int CHECK_VM_PERIOD = 60; // seconds
-static const char *CMD_PATH = "/var/run/vmware/vmcontrol.cmd=";
-static const char *CMD_PATH_REAL = "/var/run/vmware/vmcontrol.cmd";
+static const char *DEFAULT_PORT = "8334";
+static const int CHECK_VM_PERIOD = 2*60; // seconds
+static const int LOWEST_PRIO = 19;
+static const char *DEFAULT_CONFIG = "/etc/vmware/vmcontrol/config";
 
-static int sigint = 0;
-
-static void sighandle(int signum) {
-    switch(signum) {
-	case SIGINT:
-	    fprintf(stderr, "SIGINT received\n");
-	    sigint = 1;
-	    break;
-	case SIGPIPE:
-	    fprintf(stderr, "SIGPIPE received\n");
-	    sigint = 1;
-	    break;
-	default:
-	    fprintf(stderr, "%s received\n", strsignal(signum));
-	    break;
-    }
-}
-
-void die(int cmdSocket, int main_pipe, char *password, int cpulimit_pid) {
-    // Zero the password
-    int i = 0;
-    while( password[i] != '\0' ) {
-	password[i] = '\0';
-	i++;
-    }
-    free(password);
-
-    // Remove the socket file
-    if( cmdSocket > 0 ) {
-	// Errors don't matter, the file is being deleted
-	if( close(cmdSocket) ) {
-	    perror("close");
-	}
-
-	if( unlink(CMD_PATH_REAL) ) {
-	    perror("unlink");
-	}
-    }
-
-    // Alert the cpulimit process about termination
-    if( main_pipe > 0 ) {
-	// Errors don't matter, the process is terminating
-	close(main_pipe);
-    }
-
-    // Tell cpulimit process to stop
-    if( cpulimit_pid > 0 ) {
-	kill(cpulimit_pid, SIGINT);
-    }
-
-    exit(1);
-}
-
-int launchCPULimit(pid_t pid, int limit, int *cpulimitfd, int *mainfd) {
-    int cpulimit_pipe[2];
-    int main_pipe[2];
-    pid_t cpulimit_pid;
-
-    if( pipe(cpulimit_pipe) == -1 ) {
-	perror("pipe");
-	return -1;
-    }
-
-    if( pipe(main_pipe) == -1 ) {
-	perror("pipe");
-	return -1;
-    }
-
-    if( (cpulimit_pid = fork()) == -1 ) {
-	perror("fork");
-	return -1;
-    }
-
-    if( cpulimit_pid == 0 ) {
-	// In cpulimit process
-	int cpulimit, main;
-	
-	// writes to its pipe
-	if( close(cpulimit_pipe[0]) ) {
-	    perror("close");
-
-	    // Try to let main process know
-	    if( close(cpulimit_pipe[1]) ) {
-		perror("close");
-		cerr << "cpulimit process failed. Bailing..." << endl;
-		exit(1);
-	    }
-	}
-
-	cpulimit = cpulimit_pipe[1];
-
-	// reads from the main process' pipe
-	if( close(main_pipe[1]) ) {
-	    perror("close");
-
-	    // Try to let main process know
-	    if( close(cpulimit_pipe[1]) ) { 
-		perror("close");
-		cerr << "cpulimit process failed. Bailing..." << endl;
-		exit(1);
-	    }
-	}
-
-	main = main_pipe[0];
-
-	cpulimit_cmd msg = CPULIMIT_START;
-	do{
-	    if( msg == CPULIMIT_START ) 
-		cpulimit_bypid(1, 1, limit, pid);
-
-	    cout << "cpulimit failed." << endl;
-
-	    // If we get here, it means cpulimit died for some reason so alert
-	    // the main process
-	    
-	    msg = CPULIMIT_STOPPED;
-	    if( !write_all(cpulimit, &msg, sizeof(cpulimit_cmd)) ) {
-		perror("write_all");
-
-		close(cpulimit);
-		cerr << "cpulimit process failed. Bailing..." << endl;
-		exit(1);
-	    }
-
-	    // Wait for command from main process
-	    int read_result = read_all(main, &msg, sizeof(cpulimit_cmd));
-	    if( read_result == 0 ) {
-		msg = CPULIMIT_END;
-	    }else if( read_result == -1 ) {
-		perror("read_all");
-
-		close(cpulimit);
-		cerr << "cpulimit process failed. Bailing..." << endl;
-		exit(1);
-	    }
-	}while(msg != CPULIMIT_END );
-
-	cerr << "cpulimit received end command. Stopping..." << endl;
-	exit(1);
-    }else{
-	// In main process
-	
-	// writes to its pipe
-	if( close(main_pipe[0]) ) {
-	    perror("close");
-
-	    // Try to let cpulimit process know
-	    if( close(main_pipe[1]) ) {
-		perror("close");
-		cerr << "main process failed. Bailing..." << endl;
-		return -1;
-	    }
-	}
-
-	// reads from cpulimit's pipe
-	if( close(cpulimit_pipe[1]) ) {
-	    perror("close");
-
-	    // Try to let cpulimit process know
-	    if( close(main_pipe[1]) ) { 
-		perror("close");
-		cerr << "main process failed. Bailing..." << endl;
-		return -1;
-	    }
-	}
-
-	*mainfd = main_pipe[1];
-	*cpulimitfd = cpulimit_pipe[0];
-
-	return cpulimit_pid;
-    }
-
-    return -1;
-}
-
-int controlLoop(pid_t vmPid, int limit, int checkVMPeriod, char *path,
-	char *user, char *password, char *hostname) 
-{
-    int cpulimitfd, mainfd, cpulimit_pid;
-    cpulimit_pid = launchCPULimit(vmPid, limit, &cpulimitfd, &mainfd);
-    if( cpulimit_pid == -1 ) {
-	cerr << "Failed to launch cpulimit process." << endl;
-	return 0;
-    }
-
-    // Set up the unix domain socket
-    int cmdSocket;
-    if( (cmdSocket = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1 ) {
-	perror("socket");
-	die(-1, mainfd, password, cpulimit_pid);
-    }
-
-    int trueInt = 1;
-    if( (setsockopt(cmdSocket,SOL_SOCKET,SO_REUSEADDR,&trueInt, sizeof(int))) == -1 ) {
-	perror("setsockopt");
-	die(cmdSocket, mainfd, password, cpulimit_pid);
-    }
-
-    struct sockaddr_un sockPath;
-
-    bzero(&sockPath, sizeof(struct sockaddr_un));
-
-    sockPath.sun_family = AF_UNIX;
-    strncpy((char *)&(sockPath.sun_path), CMD_PATH, strlen(CMD_PATH) - 1);
-
-    if( bind(cmdSocket, (struct sockaddr *)&sockPath,
-		sizeof(struct sockaddr_un)) == -1 ) {
-	perror("bind");
-	die(cmdSocket, mainfd, password, cpulimit_pid);
-    }
-
-    struct sigaction sa;
-    sa.sa_handler = sighandle;
-    sigemptyset(&sa.sa_mask);
-    sigaddset(&sa.sa_mask, SIGINT);
-    sigaddset(&sa.sa_mask, SIGPIPE);
-    sa.sa_flags = SA_RESETHAND | SA_RESTART;
-
-    if( sigaction(SIGINT, &sa, NULL) == -1 ) {
-	perror("sigaction");
-	die(cmdSocket, mainfd, password, cpulimit_pid);
-    }
-
-    if( sigaction(SIGPIPE, &sa, NULL) == -1 ) {
-	perror("sigaction");
-	die(cmdSocket, mainfd, password, cpulimit_pid);
-    }
-
-    // Set up timeout for select
-    struct timeval vmcheck_to;
-
-    // set up state for select
-    fd_set saved, read_fds;
-    int maxFd = ( cpulimitfd > cmdSocket ) ? cpulimitfd : cmdSocket;
-    FD_ZERO(&saved);
-    FD_SET(cmdSocket, &saved);
-    FD_SET(cpulimitfd, &saved);
-
-    // Wait for commands from named socket or cpulimit pipe
-    // Periodically, check that VM is still running
-    bool stop = false;
-    while(!sigint && !stop) {
-	cout << "Waiting for commands..." << endl;
-	int select_ret;
-
-	read_fds = saved;
-	vmcheck_to.tv_sec = checkVMPeriod;
-	vmcheck_to.tv_usec = 0;
-	select_ret = select(maxFd + 1, &read_fds, NULL, NULL, &vmcheck_to);
-
-	if( select_ret == -1 ) {
-	    if( errno == EINTR ) {
-		cerr << "main: interrupted call to select" << endl;
-		continue;
-	    }else{
-		perror("select");
-		return 0;
-	    }
-	}
-
-	if(FD_ISSET(cmdSocket, &read_fds)) {
-	    cout << "Received command." << endl;
-
-	    // Handle socket command
-	    vm_cmd msg;
-	    if( !read_all(cmdSocket, &msg, sizeof(vm_cmd)) ) {
-		die(cmdSocket, mainfd, password, cpulimit_pid);
-	    }
-
-	    cpulimit_cmd cpulimit_msg;
-	    switch(msg) {
-		case VM_UP:
-		    if( !powerOnVM(path, user, password, hostname) ) {
-			die(cmdSocket, mainfd, password, cpulimit_pid);
-		    }
-
-		    // Queue a start event for cpulimit 
-		    cpulimit_msg = CPULIMIT_START;
-		    if( !write_all(mainfd, &cpulimit_msg, sizeof(cpulimit_cmd)) ) {
-			die(cmdSocket, mainfd, password, cpulimit_pid);
-		    }
-
-		    break;
-		case VM_DOWN:
-		    if( !powerOffVM(path, user, password, hostname) ) {
-			die(cmdSocket, mainfd, password, cpulimit_pid);
-		    }
-
-		    // Queue a stop event for cpulimit
-		    cpulimit_msg = CPULIMIT_END;
-		    if( !write_all(mainfd, &msg, sizeof(cpulimit_cmd)) ) {
-			die(cmdSocket, mainfd, password, cpulimit_pid);
-		    }
-
-		    stop = true;
-
-		    break;
-		default:
-		    // Ignore unknown command
-		    break;
-	    }
-	}
-
-	if(!stop && FD_ISSET(cpulimitfd, &read_fds)) {
-	    cout << "Received command from cpulimit." << endl;
-	    // Handle cpulimit event
-	    cpulimit_cmd msg;
-	    if( !read_all(cpulimitfd, &msg, sizeof(cpulimit_cmd)) ) {
-		die(cmdSocket, mainfd, password, cpulimit_pid);
-	    }
-
-	    if(   msg == CPULIMIT_STOPPED 
-	       && !isVMRunning(path, user, password, hostname) ) 
-	    {
-		if( !powerOnVM(path, user, password, hostname) ) {
-		    die(cmdSocket, mainfd, password, cpulimit_pid);
-		}
-
-		msg = CPULIMIT_START;
-		if( !write_all(mainfd, &msg, sizeof(cpulimit_cmd)) ) {
-		    die(cmdSocket, mainfd, password, cpulimit_pid);
-		}
-	    }
-	}
-
-	// Check that the VM is still running
-	if( !isVMRunning(path, user, password, hostname) ) {
-	    cout << "VM not running, attempting to restart" << endl;
-	    // Restart the VM
-	    if( !powerOnVM(path, user, password, hostname) ) {
-		die(cmdSocket, mainfd, password, cpulimit_pid);
-	    }
-
-	    // Tell cpulimit to reconnect to the VM's process
-	    cpulimit_cmd msg = CPULIMIT_START;
-	    if( !write_all(mainfd, &msg, sizeof(cpulimit_cmd)) ) {
-		die(cmdSocket, mainfd, password, cpulimit_pid);
-	    }
-	}
-    }
-
-    die(cmdSocket, mainfd, password, cpulimit_pid);
-
-    return 0;
-}
+// Prototypes
+int die(int, int, char *, int, int, set<int>&);
+int launchCPULimit(pid_t, int, int *, int *);
+int controlLoop(pid_t, int, int, char *, bool, char *, char *, char *, char *);
+pid_t daemonize();
+int recvCommand(int, string &);
+int parseCommandToken(string &, const string &, string &, size_t);
+int parseCommand(string &, string &, string &, vm_cmd &);
 
 int main(int argc, char *argv[]) {
     bool powerOn = false;
     bool powerOff = false;
+    bool daemon = true;
+    bool local = true;
+    char *port = const_cast<char *>(DEFAULT_PORT);
     char *user = NULL;
     char *password = NULL;
-    char *hostname = NULL;
+    char *hostname = const_cast<char *>(DEFAULT_HOST);
     char *path = NULL;
+    char *config = const_cast<char *>(DEFAULT_CONFIG);
     int limit = 0;
+
+    // Initial daemon logging
+    daemon_pid_file_ident = daemon_ident_from_argv0(argv[0]);
+    daemon_log_ident = daemon_ident_from_argv0(argv[0]);
 
     int arg;
     while( (arg = getopt(argc, argv, OPT_STR)) != -1 ) {
@@ -425,8 +132,17 @@ int main(int argc, char *argv[]) {
 	    case 'H':
 		hostname = optarg;
 		break;
+	    case 'p':
+		port = optarg;
+		break;
 	    case 'l':
 		limit = strtol(optarg, NULL, 10);
+		break;
+	    case 'n':
+		daemon = false;
+		break;
+	    case 'r':
+		local = false;
 		break;
 	    default:
 		cerr << "Invalid Arg: " << (char)arg << endl 
@@ -446,16 +162,11 @@ int main(int argc, char *argv[]) {
 	return 1;
     }
 
-    if( hostname == NULL ) {
-	hostname = const_cast<char *>(DEFAULT_HOST);
-    }
-
     if( powerOn && powerOff ) {
 	cerr << "Ambiguous option: power on or power off?" << endl;
 	cerr << "Usage: " << argv[0] << USAGE << endl;
 	return 1;
     }
-
 
     path = argv[optind];
 
@@ -480,7 +191,14 @@ int main(int argc, char *argv[]) {
 	return 1;
     }
 
-    if( powerOff ) {
+    // If the daemon is already running, send it the respective command
+    // Otherwise, start the daemon
+
+    pid_t daemonPid;
+    if( (daemonPid = daemon_pid_file_is_running()) >= 0 ) {
+	// TODO send command
+    }else{
+	if( powerOff ) {
 	    if( !powerOffVM(path, user, password, hostname) ) return 1;
 
 	    // Zero the password
@@ -490,24 +208,693 @@ int main(int argc, char *argv[]) {
 		i++;
 	    }
 	    free(password);
-    }else if( powerOn ) {
-	    // Need to start the daemon
+	}else if( powerOn ) {
+	    if( daemon ) {
+		// Daemon isn't running, so start it
+		daemonPid = daemonize();
+
+		if( daemonPid < 0 ) {
+		    return 1;
+		}else if ( daemonPid > 0 ) {
+		    // Daemon successfully started, end parent
+		    return 0;
+		}
+	    }
 
 	    if( !powerOnVM(path, user, password, hostname) ) return 1;
-	    
+
 	    pid_t vmPid = getVMPid(path);
 
 	    if( vmPid == -1 ) {
-		cerr << "Could not determine PID of newly launched virtual "
-		     << "machine...failing." << endl;
+		daemon_log(LOG_ERR, "Could not determine PID of newly"
+			" launched virtual machine...failing.");
 		return 1;
 	    }
 
-	    cout << "VM PID: " << vmPid << endl;
+	    daemon_log(LOG_INFO, "VM_PID = %d", vmPid);
 
-	    return !controlLoop(vmPid, limit, CHECK_VM_PERIOD, path, user,
-		    password, hostname);
+	    // renice virtual machine to lowest priority
+	    // not a failure if it cannot be niced
+	    if( setpriority(PRIO_PROCESS, vmPid, LOWEST_PRIO) ) {
+		daemon_log(LOG_WARNING, L_LOG_STR("setpriority"));
+	    }
+
+	    return !controlLoop(vmPid, limit, CHECK_VM_PERIOD, port, local,
+		    path, user, password, hostname);
+	}
     }
 
     return 0;
+}
+
+int die(int cmdSocket, int main_pipe, char *password, int cpulimit_pid,
+	int signal_fd, set<int> &sockets) 
+{
+    // Zero the password
+    if( password != NULL ) {
+	int i = 0;
+	while( password[i] != '\0' ) {
+	    password[i] = '\0';
+	    i++;
+	}
+	free(password);
+    }
+
+    // Close the listening socket
+    if( cmdSocket > 0 ) {
+	// Errors don't matter, the file is being deleted
+	if( close(cmdSocket) ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("close"));
+	}
+    }
+
+    // Close all command sockets
+    set<int>::iterator sock_it;
+    for(sock_it = sockets.begin(); sock_it != sockets.end(); ++sock_it) {
+	if( close(*sock_it) ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("close"));
+	}
+    }
+
+    // Alert the cpulimit process about termination
+    if( main_pipe > 0 ) {
+	// Errors don't matter, the process is terminating
+	close(main_pipe);
+    }
+
+    // Tell cpulimit process to stop
+    if( cpulimit_pid > 0 ) {
+	kill(cpulimit_pid, SIGTERM);
+    }
+
+    if( signal_fd > 0 ) {
+	close(signal_fd);
+    }
+
+    daemon_signal_done();
+    daemon_pid_file_remove();
+
+    return 0;
+}
+
+int launchCPULimit(pid_t pid, int limit, int *cpulimitfd, int *mainfd) {
+    int cpulimit_pipe[2];
+    int main_pipe[2];
+    pid_t cpulimit_pid;
+
+    if( pipe(cpulimit_pipe) == -1 ) {
+	daemon_log(LOG_ERR, L_LOG_STR("pipe"));
+	return -1;
+    }
+
+    if( pipe(main_pipe) == -1 ) {
+	daemon_log(LOG_ERR, L_LOG_STR("pipe"));
+	return -1;
+    }
+
+    if( (cpulimit_pid = fork()) < 0 ) {
+	daemon_log(LOG_ERR, L_LOG_STR("fork"));
+	return -1;
+    }
+
+    if( cpulimit_pid == 0 ) {
+	// In cpulimit process
+	if( daemon_reset_sigs(-1) < 0 ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("daemon_reset_sigs"));
+	    daemon_log(LOG_ERR, "cpulimit process failed. Bailing!");
+	    exit(1);
+	}
+
+	if( daemon_unblock_sigs(-1) < 0 ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("daemon_unblock_sigs"));
+	    daemon_log(LOG_ERR, "cpulimit process failed. Bailing!");
+	    exit(1);
+	}
+
+	int cpulimit, main;
+	
+	// writes to its pipe
+	if( close(cpulimit_pipe[0]) ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("close"));
+
+	    // Try to let main process know
+	    close(cpulimit_pipe[1]);
+	    daemon_log(LOG_ERR, "cpulimit process failed. Bailing!");
+	    exit(1);
+	}
+
+	cpulimit = cpulimit_pipe[1];
+
+	// reads from the main process' pipe
+	if( close(main_pipe[1]) ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("close"));
+
+	    // Try to let main process know
+	    close(cpulimit);
+	    daemon_log(LOG_ERR, "cpulimit process failed. Bailing!");
+	    exit(1);
+	}
+
+	main = main_pipe[0];
+
+	// Wow, VIX opens quite a few file descriptors
+	if( daemon_close_all(main, cpulimit, -1) < 0 ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("daemon_close_all"));
+
+	    // Try to let main process know
+	    close(cpulimit);
+	    daemon_log(LOG_ERR, "cpulimit process failed. Bailing!");
+	    exit(1);
+	}
+
+	cpulimit_cmd msg = CPULIMIT_START;
+	do{
+	    if( msg == CPULIMIT_START ) 
+		cpulimit_bypid(0, 1, limit, pid);
+
+	    daemon_log(LOG_ERR, "cpulimit stopped.");
+
+	    // If we get here, it means cpulimit died for some reason so alert
+	    // the main process
+	    
+	    msg = CPULIMIT_STOPPED;
+	    if( !write_all(cpulimit, &msg, sizeof(cpulimit_cmd)) ) {
+		daemon_log(LOG_ERR, L_LOG_STR("write_all"));
+
+		// Try to let main process know
+		close(cpulimit);
+		daemon_log(LOG_ERR, "cpulimit process failed. Bailing!");
+		exit(1);
+	    }
+
+	    // Wait for command from main process
+	    int read_result = read_all(main, &msg, sizeof(cpulimit_cmd));
+	    if( read_result == 0 ) {
+		msg = CPULIMIT_END;
+	    }else if( read_result == -1 ) {
+		daemon_log(LOG_ERR, L_LOG_STR("read_all"));
+
+		// Try to let main process know
+		close(cpulimit);
+		daemon_log(LOG_ERR, "cpulimit process failed. Bailing!");
+		exit(1);
+	    }
+	}while(msg != CPULIMIT_END );
+
+	daemon_log(LOG_INFO, "cpulimit received end command. Stopping!");
+	exit(1);
+    }else{
+	// In main process
+	
+	// writes to its pipe
+	if( close(main_pipe[0]) ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("close"));
+
+	    // Try to let cpulimit process know
+	    close(main_pipe[1]);
+	    return -1;
+	}
+
+	// reads from cpulimit's pipe
+	if( close(cpulimit_pipe[1]) ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("close"));
+
+	    // Try to let cpulimit process know
+	    close(main_pipe[1]);
+	    return -1;
+	}
+
+	*mainfd = main_pipe[1];
+	*cpulimitfd = cpulimit_pipe[0];
+
+	return cpulimit_pid;
+    }
+
+    return -1;
+}
+
+int controlLoop(pid_t vmPid, int limit, int checkVMPeriod, char *port, 
+	bool local, char *path, char *user, char *password, char *hostname) 
+{
+    int cpulimitfd, mainfd, cpulimit_pid;
+    set<int> sockets;
+
+    cpulimit_pid = launchCPULimit(vmPid, limit, &cpulimitfd, &mainfd);
+    if( cpulimit_pid == -1 ) {
+	daemon_log(LOG_ERR, "Failed to launch cpulimit process.");
+	return die(-1, -1, password, -1, -1, sockets);
+    }
+
+    // Set up the command socket
+    struct addrinfo opts;
+    struct addrinfo *addr_list;
+    int status;
+
+    bzero(&opts, sizeof(struct addrinfo));
+    opts.ai_family = AF_UNSPEC;
+    opts.ai_socktype = SOCK_STREAM;
+    opts.ai_flags = AI_PASSIVE;
+
+    char *bindHost = NULL;
+    if( local ) {
+	// Only listen on local address
+	bindHost = const_cast<char *>("localhost");
+    }
+
+    if( (status = getaddrinfo(bindHost, port, &opts, &addr_list)) != 0 ) {
+	daemon_log(LOG_ERR, "Error getting address info: %s\n",
+		gai_strerror(status));
+	return die(-1, mainfd, password, cpulimit_pid, -1, sockets);
+    }
+
+    int cmdSocket;
+    if( (cmdSocket = get_socket(addr_list, true) ) == -1 ) {
+	// get_socket does the logging internally
+	return die(-1, mainfd, password, cpulimit_pid, -1, sockets);
+    }
+    freeaddrinfo(addr_list);
+
+    // Listen for commands on this socket
+    if( listen(cmdSocket, 10) ) {
+	daemon_log(LOG_ERR, L_LOG_STR("listen"));
+	return die(cmdSocket, mainfd, password, cpulimit_pid, -1, sockets);
+    }
+
+    // set up fd used to read signals
+    if( daemon_signal_init(SIGINT, SIGTERM, SIGQUIT, SIGHUP, 0) < 0 ) {
+	daemon_log(LOG_ERR, L_LOG_STR("daemon_signal_init"));
+	return die(cmdSocket, mainfd, password, cpulimit_pid, -1, sockets);
+    }
+
+    int signal_fd = daemon_signal_fd();
+    if( signal_fd < 0 ) {
+	daemon_log(LOG_ERR, L_LOG_STR("daemon_signal_fd"));
+	return die(cmdSocket, mainfd, password, cpulimit_pid, signal_fd, 
+		sockets);
+    }
+
+    // set up state for select
+    fd_set saved, read_fds;
+    int maxFd = ( cpulimitfd > cmdSocket ) ? cpulimitfd : cmdSocket;
+    maxFd = ( maxFd > signal_fd ) ? maxFd : signal_fd;
+    FD_ZERO(&saved);
+    FD_SET(cmdSocket, &saved);
+    FD_SET(cpulimitfd, &saved);
+    FD_SET(signal_fd, &saved);
+
+    // Wait for commands from network, cpulimit pipe or a signal
+    // Periodically, check that VM is still running
+    bool stop = false;
+
+    // holds incomplete commands
+    map<int, string> incCmds;
+
+    while(!stop) {
+	daemon_log(LOG_INFO, "Waiting for commands...");
+	int select_ret;
+
+	read_fds = saved;
+
+	struct timeval vmcheck_to;
+	vmcheck_to.tv_sec = checkVMPeriod;
+	vmcheck_to.tv_usec = 0;
+
+	select_ret = select(maxFd + 1, &read_fds, NULL, NULL, &vmcheck_to);
+
+	if( select_ret == -1 ) {
+	    if( errno == EINTR ) {
+		continue;
+	    }else{
+		daemon_log(LOG_ERR, L_LOG_STR("select"));
+		return die(cmdSocket, mainfd, password, cpulimit_pid, signal_fd,
+			sockets);
+	    }
+	}
+
+	for(int i = 0; i <= maxFd; ++i) {
+	    if( FD_ISSET(i, &read_fds) ) {
+		// Signals should be handled first
+		if( i == signal_fd ) {
+		    int sig;
+
+		    if( (sig = daemon_signal_next()) <= 0 ) {
+			daemon_log(LOG_ERR, L_LOG_STR("daemon_signal_next"));
+			return die(cmdSocket, mainfd, password, cpulimit_pid,
+				signal_fd, sockets);
+		    }
+
+		    switch(sig) {
+			case SIGINT:
+			case SIGTERM:
+			case SIGHUP:
+			case SIGQUIT:
+			    stop = true;
+			    break;
+			default:
+			    break;
+		    }
+		// Handle cpulimit event
+		}else if( !stop && i == cpulimitfd ) {
+		    cpulimit_cmd msg;
+		    if( !read_all(cpulimitfd, &msg, sizeof(cpulimit_cmd)) ) {
+			return die(cmdSocket, mainfd, password, cpulimit_pid,
+				signal_fd, sockets);
+		    }
+		    daemon_log(LOG_INFO, 
+			    "Received command from cpulimit: %d", msg);
+
+		    if( msg == CPULIMIT_STOPPED ) {
+			if( !isVMRunning(path, user, password, hostname) ) {
+			    if( !powerOnVM(path, user, password, hostname) ) {
+				return die(cmdSocket, mainfd, password, 
+					cpulimit_pid, signal_fd, sockets);
+			    }
+
+			    msg = CPULIMIT_START;
+			    if( !write_all(mainfd, &msg, 
+					sizeof(cpulimit_cmd)) ) 
+			    {
+				return die(cmdSocket, mainfd, password, 
+					cpulimit_pid, signal_fd, sockets);
+			    }
+			}else{
+			    // cpulimit stopped for some other reason
+			    stop = true;
+			    msg = CPULIMIT_END;
+			    if( !write_all(mainfd, &msg, sizeof(cpulimit_cmd)) )
+			    {
+				return die(cmdSocket, mainfd, password, 
+					cpulimit_pid, signal_fd, sockets);
+			    }
+			}
+		    }
+		// Handle new connection
+		}else if( !stop && i == cmdSocket ) {
+		    struct sockaddr_storage remote_addr;
+		    socklen_t addr_size = sizeof(struct sockaddr_storage);
+
+		    int newConn = accept(cmdSocket,
+			    (struct sockaddr *)&remote_addr, &addr_size);
+
+		    if( newConn == -1 ) {
+			daemon_log(LOG_ERR, L_LOG_STR("accept"));
+		    }else{
+			FD_SET(newConn, &saved);
+			if( newConn > maxFd ) maxFd = newConn;
+			sockets.insert(newConn);
+
+			struct sockaddr_in *addr =
+			    (struct sockaddr_in *)&remote_addr;
+			daemon_log(LOG_INFO, "new conn from %s, socket=%d",
+				inet_ntoa(addr->sin_addr), newConn);
+		    }
+		// Any other socket will send commands to be processed
+		}else{
+		    daemon_log(LOG_INFO, "activity on socket=%d", i);
+		    // Yes, this should be a reference to get the desired effect
+		    string &in_cmd = incCmds[i];
+		    int recvRet = recvCommand(i, in_cmd);
+
+		    if (recvRet < 0) {
+			return die(cmdSocket, mainfd, password, cpulimit_pid, 
+				signal_fd, sockets);
+		    }
+		    
+		    if (recvRet == 0) {
+			// Connection closed
+			FD_CLR(i, &saved);
+			sockets.erase(i);
+
+			if (close(i)) {
+			    daemon_log(LOG_ERR, L_LOG_STR("close"));
+			}
+			daemon_log(LOG_INFO, "socket=%d closed", i);
+			continue;
+		    }
+
+		    // Process all received commands
+		    int sizeCmd = -1;
+		    do {
+			string cmd_user, cmd_password;
+			vm_cmd cmd;
+
+			sizeCmd = parseCommand(in_cmd, cmd_user, cmd_password, cmd);
+
+			if( sizeCmd < 0 ) {
+			    // Invalid command received
+			    daemon_log(LOG_INFO, "Received invalid command");
+
+			    // Remove the invalid command
+			    size_t endPos = in_cmd.find(END);
+
+			    endPos += END.length();
+			    if( endPos >= in_cmd.length()-1 ) {
+				in_cmd.clear();
+			    }else{
+				in_cmd = in_cmd.substr(endPos);
+			    }
+
+			    string response = BAD + END;
+			    if( !send_all(i, const_cast<char *>(response.c_str()), 
+					response.length()))
+			    {
+				return die(cmdSocket, mainfd, password, 
+					cpulimit_pid, signal_fd, sockets);
+			    }
+			}else if( sizeCmd > 0 ) {
+			    // Valid command found
+
+			    // super basic authentication => must match the 
+			    // credentials used to talk to the virtual machine
+			    if (cmd_user != string(user) || 
+				cmd_password != string(password) ) 
+			    {
+				string response = BAD + END;
+				if( !send_all(i, 
+					    const_cast<char *>(response.c_str()), 
+					    response.length()))
+				{
+				    return die(cmdSocket, mainfd, password, 
+					    cpulimit_pid, signal_fd, sockets);
+				}
+
+				if( sizeCmd  >= static_cast<int>(in_cmd.length()-1) ) {
+				    in_cmd.clear();
+				}else{
+				    in_cmd = in_cmd.substr(sizeCmd);
+				}
+
+				continue;
+			    }
+
+			    daemon_log(LOG_INFO, "Received command: %c", cmd);
+
+			    cpulimit_cmd cpulimit_msg;
+
+			    string response_field;
+
+			    switch (cmd) {
+			    case VM_UP:
+				if (!powerOnVM(path, user, password, hostname)) {
+				    return die(cmdSocket, mainfd, password, 
+					    cpulimit_pid, signal_fd, sockets);
+				}
+
+				// Queue a start event for cpulimit 
+				cpulimit_msg = CPULIMIT_START;
+				if (!write_all(mainfd, &cpulimit_msg, 
+					    sizeof(cpulimit_cmd))) 
+				{
+				    return die(cmdSocket, mainfd, password, 
+					    cpulimit_pid, signal_fd, sockets);
+				}
+
+				response_field = OK;
+
+				break;
+			    case VM_DOWN:
+				if (!powerOffVM(path, user, password, hostname)) {
+				    return die(cmdSocket, mainfd, password, 
+					    cpulimit_pid, signal_fd, sockets);
+				}
+
+				// Queue a stop event for cpulimit
+				cpulimit_msg = CPULIMIT_END;
+				if (!write_all(mainfd, &cpulimit_msg, 
+					    sizeof(cpulimit_cmd))) 
+				{
+				    return die(cmdSocket, mainfd, password, 
+					    cpulimit_pid, signal_fd, sockets);
+				}
+
+				stop = true;
+
+				response_field = OK;
+
+				break;
+			    default:
+				// Ignore invalid commands
+				response_field = BAD;
+				break;
+			    }
+
+			    // Send a response
+			    string response = response_field + END;
+			    if( !send_all(i, 
+					const_cast<char *>(response.c_str()), 
+					response.length()))
+			    {
+				return die(cmdSocket, mainfd, password, 
+					cpulimit_pid, signal_fd, sockets);
+			    }
+
+			    // Move to the next command
+			    if( sizeCmd  >= static_cast<int>(in_cmd.length()-1) ) {
+				in_cmd.clear();
+			    }else{
+				in_cmd = in_cmd.substr(sizeCmd);
+			    }
+			}else{
+			    daemon_log(LOG_INFO, "incomplete conversation");
+			}
+		    } while (sizeCmd != 0 && in_cmd.length() > 0);
+		}
+	    }
+
+	    if( stop ) break;
+	}
+
+	// Check that the VM is still running
+	if(!stop && !isVMRunning(path, user, password, hostname) ) {
+	    daemon_log(LOG_INFO, "VM not running, attempting to restart.");
+	    // Restart the VM
+	    if( !powerOnVM(path, user, password, hostname) ) {
+		return die(cmdSocket, mainfd, password, cpulimit_pid,
+			signal_fd, sockets);
+	    }
+
+	    // Tell cpulimit to reconnect to the VM's process
+	    cpulimit_cmd msg = CPULIMIT_START;
+	    if( !write_all(mainfd, &msg, sizeof(cpulimit_cmd)) ) {
+		return die(cmdSocket, mainfd, password, cpulimit_pid,
+			signal_fd, sockets);
+	    }
+	}
+    }
+
+    daemon_log(LOG_ERR, "vmcontrol stopped.");
+
+    // This is valid shutdown
+    return !die(cmdSocket, mainfd, password, cpulimit_pid,
+	    signal_fd, sockets);
+}
+
+int recvCommand(int socket, string &recvBuf) 
+{
+    const int BLOCK_SIZE = 1024; // 1/4 K
+
+    // leave room for null-terminator
+    char *recvStr = new char[BLOCK_SIZE+1];
+
+    // Buffer all available data
+    int total_recv = 0, num_recv;
+    bool done = false;
+    while( !done ) {
+	num_recv = recv(socket, recvStr, BLOCK_SIZE, MSG_DONTWAIT);
+
+	if( num_recv == -1 ) {
+	    if( errno == EAGAIN || errno == EINTR ) {
+		done = true;
+	    }else{
+		daemon_log(LOG_ERR, L_LOG_STR("recv"));
+		delete recvStr;
+		return -1;
+	    }
+	}else if( num_recv == 0 ) {
+	    // Inform caller of socket shutdown on client-side
+	    recvBuf.clear();
+	    delete recvStr;
+	    return 0;
+	}else{
+	    recvStr[num_recv] = '\0';
+	    recvBuf += recvStr;
+	    total_recv += num_recv;
+	}
+    }
+
+    delete recvStr;
+    return total_recv;
+}
+
+int parseCommandToken(string &in_cmd, const string &cmd_token, 
+	string &cmd_value, size_t start_pos) 
+{
+    size_t token_end = in_cmd.find_first_of(" ", start_pos);
+    if( token_end == string::npos ) return 0;
+    if( in_cmd.substr(start_pos, token_end-start_pos) != cmd_token ) return -1;
+
+    size_t token_val_end = in_cmd.find_first_of(" ", token_end+1);
+    if( token_val_end == string::npos ) return 0;
+
+    cmd_value = in_cmd.substr(token_end+1, token_val_end-(token_end+1));
+
+    return token_val_end;
+}
+
+/**
+ * @return  < 0, if the command is invalid; 0, if the command is incomplete;
+ * 	    the length of the command, if the command was parsed correctly
+ */
+int parseCommand(string &in_cmd, string &user, string &password, vm_cmd &cmd) {
+    // Find the end of the command
+    int endPos = in_cmd.find(END);
+    if( endPos == static_cast<int>(string::npos) ) return 0;
+
+    // The value of the USER field
+    int retUser = parseCommandToken(in_cmd, USER, user, 0);
+    if( retUser <= 0 || retUser >= endPos ) return -1;
+
+    // The value of the PASS field
+    int retPass = parseCommandToken(in_cmd, PASS, password, retUser+1);
+    if( retPass <= 0 || retPass >= endPos ) return -1;
+
+    // The value of the CMD field
+    std::string cmd_str;
+    int retCmd = parseCommandToken(in_cmd, CMD, cmd_str, retPass+1);
+    if( retCmd <= 0 || retCmd >= endPos ) return -1;
+    cmd = cmd_str[0];
+
+    return endPos + END.length();
+}
+
+pid_t daemonize() {
+    pid_t retPid;
+    if( daemon_reset_sigs(-1) < 0 ) {
+	daemon_log(LOG_ERR, L_LOG_STR("daemon_reset_sigs"));
+	return -1;
+    }
+
+    if( daemon_unblock_sigs(-1) < 0 ) {
+	daemon_log(LOG_ERR, L_LOG_STR("daemon_unblock_sigs"));
+	return -1;
+    }
+
+    if( (retPid = daemon_fork()) < 0 ) {
+	daemon_log(LOG_ERR, L_LOG_STR("daemon_fork"));
+	return -1;
+    }else if( !retPid ) {
+	// Parent just exits
+	
+	// Now in daemon
+	if( daemon_close_all(-1) < 0 ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("daemon_close_all"));
+	    return -1;
+	}
+
+	if( daemon_pid_file_create() < 0 ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("daemon_pid_file_create"));
+	    return -1;
+	}
+    }
+    return retPid;
 }

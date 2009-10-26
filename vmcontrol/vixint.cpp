@@ -12,6 +12,8 @@ using std::cerr;
 using std::endl;
 using std::string;
 
+#include <libdaemon/dlog.h>
+
 // VIX API header
 #include "vix.h"
 
@@ -35,7 +37,9 @@ static VixHandle getVixHandle(char *path, char *user, char *password,
     string startErrMsg;
     bool started = false;
     if( !startServices(startErrMsg, started) ) {
-	cerr << "Unable to start VMWare services: " << startErrMsg << endl;
+	startErrMsg = string("Unabled to start VMWare services: ") +
+	    startErrMsg;
+	daemon_log(LOG_ERR, "%s", startErrMsg.c_str());
 	return VIX_INVALID_HANDLE;
     }
 
@@ -50,8 +54,9 @@ static VixHandle getVixHandle(char *path, char *user, char *password,
 			  &hostHandle, VIX_PROPERTY_NONE);
 
 	if (err != VIX_OK) {
-	    cerr << "Error connecting to host: " 
-		 << Vix_GetErrorText(err, NULL) << endl;
+	    string tmpErr = string("Error connecting to host: ") +
+		string(Vix_GetErrorText(err, NULL));
+	    daemon_log(LOG_ERR, "%s", tmpErr.c_str());
 	    Vix_ReleaseHandle(jobHandle);
 
 	    // Retry connection?
@@ -67,8 +72,6 @@ static VixHandle getVixHandle(char *path, char *user, char *password,
 	break;
     }
 
-    cout << "Connected to host" << endl;
-
     // Open virtual machine and get a handle.
     jobHandle = VixVM_Open(hostHandle, vmxFilePath.c_str(), NULL, NULL); 
 
@@ -76,15 +79,14 @@ static VixHandle getVixHandle(char *path, char *user, char *password,
 		      &vmHandle, VIX_PROPERTY_NONE);
 
     if (err != VIX_OK) {
-	cerr << "Error getting vm handle: " 
-	     << Vix_GetErrorText(err, NULL) << endl;
+	string tmpErr = string("Error getting vm handle: ") +
+	    Vix_GetErrorText(err, NULL);
+	daemon_log(LOG_ERR, "%s", tmpErr.c_str());
 	Vix_ReleaseHandle(jobHandle);
 	return VIX_INVALID_HANDLE;
     }
      
     Vix_ReleaseHandle(jobHandle);
-
-    cout << "Obtained VM handle" << endl;
 
     return vmHandle;
 }
@@ -95,18 +97,13 @@ static bool isVMRunning(VixHandle vmHandle) {
 	    &isRunning, VIX_PROPERTY_NONE);
 
     if( err != VIX_OK ) {
-	cerr << "Error checking the running state of the VM: "
-	     << Vix_GetErrorText(err, NULL) << endl;
+	string tmpErr = string("Error checking the running state of the VM: ")
+	    + Vix_GetErrorText(err, NULL);
+	daemon_log(LOG_ERR, "%s", tmpErr.c_str());
 	return false;
     }
 
-    if( isRunning ) {
-	cout << "VM is running" << endl;
-	return true; 
-    }
-
-    cout << "VM is not running" << endl;
-    return false;
+    return isRunning;
 }
 
 bool isVMRunning(char *path, char *user, char *password, char *hostname) {
@@ -152,8 +149,9 @@ bool powerOnVM(char *path, char *user, char *password, char *hostname) {
 
 	err = VixJob_Wait(jobHandle, VIX_PROPERTY_NONE);
 	if (VIX_OK != err && err != VIX_E_VM_IS_RUNNING) {
-	    cerr << "Error powering on the VM: "
-		 << Vix_GetErrorText(err, NULL) << endl;
+	    string tmpErr = string("Error powering on the VM: ") +
+		Vix_GetErrorText(err, NULL);
+	    daemon_log(LOG_ERR, "%s", tmpErr.c_str());
 	    Vix_ReleaseHandle(jobHandle);
 	    Vix_ReleaseHandle(vmHandle);
 	    return false;
@@ -161,7 +159,9 @@ bool powerOnVM(char *path, char *user, char *password, char *hostname) {
 
 	Vix_ReleaseHandle(jobHandle);
 
-	cout << "Powered on the VM. Waiting for it to boot." << endl;
+	daemon_log(LOG_INFO, "Powered on the VM. Waiting for it to boot.");
+    }else{
+	daemon_log(LOG_INFO, "VM already on, checking for VMWare tools.");
     }
 
     // Indicates system is up
@@ -172,10 +172,12 @@ bool powerOnVM(char *path, char *user, char *password, char *hostname) {
 	if( err == VIX_E_TOOLS_NOT_RUNNING ||
 	    err == VIX_E_TIMEOUT_WAITING_FOR_TOOLS )
 	{
-	    cerr << "WARNING: VMWare Tools not available in VM" << endl;
+	    daemon_log(LOG_WARNING, 
+		    "WARNING: VMWare Tools not available in VM.");
 	}else{
-	    cerr << "Error waiting for VM to boot: "
-		 << Vix_GetErrorText(err, NULL) << endl;
+	    string tmpErr = string("Error waiting for VM to boot: ") +
+		Vix_GetErrorText(err, NULL);
+	    daemon_log(LOG_ERR, "%s", tmpErr.c_str());
 	    Vix_ReleaseHandle(jobHandle);
 	    Vix_ReleaseHandle(vmHandle);
 	    return false;
@@ -185,7 +187,7 @@ bool powerOnVM(char *path, char *user, char *password, char *hostname) {
     Vix_ReleaseHandle(vmHandle);
     Vix_ReleaseHandle(jobHandle);
 
-    cout << "VM is now ready for experiments." << endl;
+    daemon_log(LOG_ERR, "VM is now ready for experiments.");
 
     return true;
 }
@@ -207,8 +209,9 @@ bool powerOffVM(char *path, char *user, char *password, char *hostname) {
 				   NULL);
 	err = VixJob_Wait(jobHandle, VIX_PROPERTY_NONE);
 	if (err != VIX_OK) {
-	    cerr << "Error powering off the VM: "
-		 << Vix_GetErrorText(err, NULL) << endl;
+	    string tmpErr = string("Error powering off the VM: ")
+		+ Vix_GetErrorText(err, NULL);
+	    daemon_log(LOG_ERR, "%s", tmpErr.c_str());
 	    Vix_ReleaseHandle(jobHandle);
 	    return false;
 	}
@@ -216,9 +219,9 @@ bool powerOffVM(char *path, char *user, char *password, char *hostname) {
 	Vix_ReleaseHandle(jobHandle);
 	jobHandle = VIX_INVALID_HANDLE;
 
-	cout << "Powered off the VM" << endl;
+	daemon_log(LOG_INFO, "Powered off the VM.\n");
     }else{
-	cerr << "VM is not currently running" << endl;
+	daemon_log(LOG_INFO, "VM is not currently running.\n");
     }
 
     return true;
