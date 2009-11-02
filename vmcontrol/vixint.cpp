@@ -12,10 +12,13 @@ using std::cerr;
 using std::endl;
 using std::string;
 
+// C headers
+extern "C" {
 #include <libdaemon/dlog.h>
 
 // VIX API header
 #include "vix.h"
+}
 
 // Project includes
 #include "vixint.h"
@@ -219,9 +222,9 @@ bool powerOffVM(char *path, char *user, char *password, char *hostname) {
 	Vix_ReleaseHandle(jobHandle);
 	jobHandle = VIX_INVALID_HANDLE;
 
-	daemon_log(LOG_INFO, "Powered off the VM.\n");
+	daemon_log(LOG_INFO, "Powered off the VM.");
     }else{
-	daemon_log(LOG_INFO, "VM is not currently running.\n");
+	daemon_log(LOG_INFO, "VM is not currently running.");
     }
 
     return true;

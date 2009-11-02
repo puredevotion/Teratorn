@@ -29,9 +29,11 @@ int systemExec(std::string&);
 bool startServices(std::string &, bool &);
 pid_t getVMPid(char *);
 char *get_password();
+void zero_string(char *);
 int write_all(int, void *, int);
 int read_all(int, void *, int);
 int send_all(int, void *, int);
+int recv_all(int, void *, int);
 int get_socket(struct addrinfo *addr_list, bool should_bind);
 
 #endif

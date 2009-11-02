@@ -43,4 +43,4 @@ clean:
 	rm -f *.o *.ls *.hex *.class $(binaries)
 
 test: vmcontrol
-	sudo ./vmcontrol -n -U vmuser -l 20 -u emdebian/emdebian.vmx
+	sudo ./vmcontrol -n -u

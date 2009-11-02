@@ -153,11 +153,7 @@ pid_t getVMPid(char *vmPath) {
 	    do {
 		if( readdir_r(vmvmx, &innerEnt, innerResp) ) {
 		    daemon_log(LOG_ERR, L_LOG_STR("readdir_r"));
-		    free(innerResp);
-		    free(resultp);
-		    closedir(vmrun);
-		    closedir(vmvmx);
-		    return -1;
+		    break;
 		}
 
 		if(    *innerResp != NULL 
@@ -253,19 +249,22 @@ char *get_password() {
 	return NULL;
     }
 
-    int c, size = -1, prev_size = PASS_INIT_SIZE;
+    int c, pos = -1, size = PASS_INIT_SIZE;
     do {
 	c = getchar();
-	size++;
-	if( size >= prev_size ) password = (char *)realloc(password, size*2);
+	pos++;
+	if( (pos+1) >= size ) {
+	    size *= 2;
+	    password = (char *)realloc(password, size);
+	}
 
 	if( password == NULL ) {
 	    daemon_log(LOG_ERR, L_LOG_STR("realloc"));
 	    return NULL;
 	}
 
-	password[size]= (char)c;
-    }while( password[size] != '\0' && c != EOF && !isspace(c) );
+	password[pos]= (char)c;
+    }while( c != EOF && password[pos] != '\0' && !isspace(c) );
 
     // Turn echo back on
     if( tcsetattr(fileno(stdin), TCSAFLUSH, &orig) == -1 ) {
@@ -274,9 +273,16 @@ char *get_password() {
 	return NULL;
     }
 
-    password[size] = '\0';
+    password[pos] = '\0';
 
     return password;
+}
+
+void zero_string(char *str) {
+    while( *str != '\0' ) {
+	*str = '\0';
+	str++;
+    }
 }
 
 int write_all(int fd, void *buf, int size) {
@@ -314,9 +320,7 @@ int send_all(int socket, void *buf, int length) {
 int read_all(int fd, void *buf, int size) {
     char *lbuf = static_cast<char *>(buf);
     int num_read = 0, length = -1;
-    while( num_read < size && 
-	   length != 0 ) 
-    {
+    while( num_read < size && length != 0 ) {
 	length = read(fd, lbuf + num_read, size - num_read);
 
 	if( length == 0 ) {
@@ -327,6 +331,25 @@ int read_all(int fd, void *buf, int size) {
 	    daemon_log(LOG_ERR, L_LOG_STR("read"));
 	    return -1;
 	}else if( length != -1 ) num_read += length;
+    }
+
+    return 1;
+}
+
+int recv_all(int socket, void *buf, int size) {
+    char *lbuf = static_cast<char *>(buf);
+    int total_read = 0, num_read = -1;
+    while( num_read < size && num_read != 0 ) {
+	num_read = recv(socket, lbuf + total_read, size - total_read, 0);
+
+	if( num_read == 0 ) {
+	    return 0;
+	}
+
+	if( num_read == -1 && errno != EINTR ) {
+	    daemon_log(LOG_ERR, L_LOG_STR("recv"));
+	    return -1;
+	}else if( num_read != -1 ) total_read += num_read;
     }
 
     return 1;

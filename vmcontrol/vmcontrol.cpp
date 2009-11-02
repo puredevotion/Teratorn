@@ -18,9 +18,9 @@
 
 // Standard includes
 #include <iostream>
-#include <cstdio>
 #include <cerrno>
 #include <cstdlib>
+#include <cassert>
 #include <map>
 #include <set>
 using std::cout;
@@ -30,6 +30,8 @@ using std::string;
 using std::map;
 using std::set;
 
+// C header files
+extern "C" {
 #include <unistd.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -48,6 +50,7 @@ using std::set;
 
 // libdaemon includes
 #include <libdaemon/daemon.h>
+}
 
 // Project includes
 #include "cpulimit.h"
@@ -60,6 +63,23 @@ using std::set;
  * USER username PASS password CMD vm_cmd \r\n
  *
  * Take note of the use of a single space as a delimiter between all tokens.
+ */
+
+/*
+ * The format of the config file is:
+ * option1=value1
+ * option2=value2
+ * option3=value3
+ * ...
+ *
+ * valid options are (identifer = type of value)
+ * hostname = string
+ * port = string
+ * remote = integer (non-zero means true, zero means false)
+ * user = string
+ * password = string
+ * limit = integer (between 1 and 100)
+ * vmpath = string
  */
 
 typedef char vm_cmd;
@@ -79,13 +99,14 @@ static const string OK = "OK";
 
 // Delimiter
 static const string END = "\r\n";
+static const string CONFIG_DELIM = "=";
 
-// TODO ssl, config file, commands (client)
+// TODO ssl
 
 static const char *USAGE = 
-" [-n] [-c config] [-H hostname] [-p port] [-r] -U user -l limit <-u|-d> <vmpath>";
+" [-n] [-c full_path_config] [-H hostname] [-p port] [-r] -U user -l limit <-u|-d> <vmpath>";
 static const char *OPT_STR = "H:udU:l:nrp:c:";
-static const char *DEFAULT_HOST = "http://127.0.0.1:8222/sdk";
+static const char *DEFAULT_HOST = "https://127.0.0.1:8333/sdk";
 static const char *DEFAULT_PORT = "8334";
 static const int CHECK_VM_PERIOD = 2*60; // seconds
 static const int LOWEST_PRIO = 19;
@@ -99,6 +120,8 @@ pid_t daemonize();
 int recvCommand(int, string &);
 int parseCommandToken(string &, const string &, string &, size_t);
 int parseCommand(string &, string &, string &, vm_cmd &);
+int parseResponse(string &, string &);
+int parseConfigLine(FILE *, string &, string &);
 
 int main(int argc, char *argv[]) {
     bool powerOn = false;
@@ -108,8 +131,8 @@ int main(int argc, char *argv[]) {
     char *port = const_cast<char *>(DEFAULT_PORT);
     char *user = NULL;
     char *password = NULL;
-    char *hostname = const_cast<char *>(DEFAULT_HOST);
     char *path = NULL;
+    char *hostname = const_cast<char *>(DEFAULT_HOST);
     char *config = const_cast<char *>(DEFAULT_CONFIG);
     int limit = 0;
 
@@ -144,6 +167,9 @@ int main(int argc, char *argv[]) {
 	    case 'r':
 		local = false;
 		break;
+	    case 'c':
+		config = optarg;
+		break;
 	    default:
 		cerr << "Invalid Arg: " << (char)arg << endl 
 		     << "Usage: " << argv[0] << USAGE << endl;
@@ -151,44 +177,89 @@ int main(int argc, char *argv[]) {
 	}
     }
 
+    FILE *configFile = fopen(config, "r");
+    if( configFile == NULL ) {
+	// This is not a critical error, try to proceed
+	cerr << "Could not open config file '" << config << "': " <<
+	    strerror(errno) << endl;
+    }else{
+	// Parse the config file
+	int line = 1;
+	bool readMore = true;
+	while( readMore ) {
+	    string option;
+	    string value;
+	    int parseRet = parseConfigLine(configFile, option, value);
+
+	    if( parseRet < 0 ) {
+		cerr << "encountered error when reading config file at line " << line
+		     << endl;
+		readMore = false;
+	    }else if( parseRet == 0 ) {
+		fclose(configFile);
+		readMore = false;
+	    }else{
+		char *valueStr = new char[value.length()];
+		strncpy(valueStr, value.c_str(), value.length());
+
+		/*
+		 * valid options are (identifer = type of value)
+		 * hostname = string
+		 * port = string
+		 * remote = integer (non-zero means true, zero means false)
+		 * user = string
+		 * password = string
+		 * limit = integer (between 1 and 100)
+		 * vmpath = string
+		 */
+		if( option == "hostname" ) {
+		    hostname = valueStr;
+		}else if( option == "port" ) {
+		    port = valueStr;
+		}else if( option == "remote" ) {
+		    int tmpVal = strtol(valueStr, NULL, 10);
+		    if( tmpVal == 0 ) local = true;
+		    else local = false;
+		    delete valueStr;
+		}else if( option == "user" ) {
+		    user = valueStr;
+		}else if( option == "password" ) {
+		    password = valueStr;
+		}else if( option == "limit" ) {
+		    limit = strtol(valueStr, NULL, 10);
+		    delete valueStr;
+		}else if( option == "vmpath" ) {
+		    path = valueStr;
+		}else{
+		    cerr << "invalid option in config file '" << option << "', line "
+			<< line << endl;
+		}
+	    }
+	    line++;
+	}
+    }
+
+
     if( (!powerOn && !powerOff) || !user ) {
+	cerr << "Must specify -u or -d and a user" << endl;
 	cerr << "Usage: " << argv[0] << USAGE << endl;
 	return 1;
     }
-
-    if( limit < 1 || limit > 100 ) {
-	cerr <<  "Limit must be in range 1-100%" << endl;
-	cerr << "Usage: " << argv[0] << USAGE << endl;
-	return 1;
-    }
-
+  
     if( powerOn && powerOff ) {
 	cerr << "Ambiguous option: power on or power off?" << endl;
 	cerr << "Usage: " << argv[0] << USAGE << endl;
 	return 1;
     }
 
-    path = argv[optind];
-
-    // This program is really only useful with root privileges. 
-    // Also, this program should not be setuid root
-    if( geteuid() == 0 && getuid() != 0 ) {
-	cerr << "Don't run this program setuid...it is a bad idea." << endl;
-	return 1;
-    }
-
-    if( getuid() != 0 ) {
-	cerr << "You are not root." 
-	     << " This program is useless without root privileges." << endl;
-	return 1;
-    }
-
     // Ask for the password
-    cout << user << "'s password: ";
-    password = get_password();
-    cout << endl;
     if( password == NULL ) {
-	return 1;
+	cout << user << "'s password: ";
+	password = get_password();
+	cout << endl;
+	if( password == NULL ) {
+	    return 1;
+	}
     }
 
     // If the daemon is already running, send it the respective command
@@ -196,18 +267,191 @@ int main(int argc, char *argv[]) {
 
     pid_t daemonPid;
     if( (daemonPid = daemon_pid_file_is_running()) >= 0 ) {
-	// TODO send command
+	daemon_log(LOG_INFO, "Daemon running...sending command to daemon");
+	// Build the command
+	string sendCmd = USER + " " + user + " " +
+	                 PASS + " " + password + " " + 
+	                 CMD + " ";
+	if( powerOff ) {
+	    sendCmd.append(1, static_cast<char>(VM_DOWN));
+	}else if( powerOn ) {
+	    sendCmd.append(1, static_cast<char>(VM_UP));
+	}else{
+	    // Unreachable
+	    assert(0);
+	}
+
+	sendCmd += " " + END;
+
+	// Connect to the daemon
+	struct addrinfo opts;
+	struct addrinfo *addr_list;
+	int status;
+
+	bzero(&opts, sizeof(struct addrinfo));
+	opts.ai_family = AF_UNSPEC;
+	opts.ai_socktype = SOCK_STREAM;
+	opts.ai_flags = AI_PASSIVE;
+
+	char *bindHost = const_cast<char *>("localhost");
+
+	if( (status = getaddrinfo(bindHost, port, &opts, &addr_list)) != 0 ) {
+	    daemon_log(LOG_ERR, "Error getting address info: %s\n",
+		    gai_strerror(status));
+	    zero_string(password);
+	    return 1;
+	}
+
+	int daemon;
+	if( (daemon = get_socket(addr_list, false) ) == -1 ) {
+	    // get_socket does the logging internally
+	    zero_string(password);
+	    return 1;
+	}
+
+	struct addrinfo *addr_iter;
+	bool connected = false;
+	for(addr_iter = addr_list; addr_iter != NULL; 
+	    addr_iter = addr_iter->ai_next) 
+	{
+	    if( connect(daemon, addr_iter->ai_addr, addr_iter->ai_addrlen) ) {
+		daemon_log(LOG_ERR, L_LOG_STR("connect"));
+	    }else{
+		// done if connected successfully
+		connected = true;
+		break;
+	    }
+	}
+	freeaddrinfo(addr_list);
+
+	if( !connected ) {
+	    zero_string(password);
+	    close(daemon);
+	    return 1;
+	}
+
+	// send command
+	if( !send_all(daemon, const_cast<char *>(sendCmd.c_str()), 
+		    sendCmd.length()) ) {
+	    zero_string(password);
+	    close(daemon);
+	    return 1;
+	}
+
+	// Set up info for select
+	fd_set read_fds, saved;
+	FD_ZERO(&saved);
+	FD_SET(daemon, &saved);
+
+	string response;
+	string value;
+
+	bool noResponse = true;
+	while(noResponse) {
+	    read_fds = saved;
+	    int select_ret = select(daemon + 1, &read_fds, NULL, NULL, NULL);
+
+	    if( select_ret == -1 ) {
+		if( errno == EINTR ) {
+		    continue;
+		}else{
+		    daemon_log(LOG_ERR, L_LOG_STR("select"));
+		    zero_string(password);
+		    close(daemon);
+		    return 1;
+		}
+	    }
+
+	    if( FD_ISSET(daemon, &read_fds) ) {
+		int recvRet = recvCommand(daemon, response);
+
+		// It is an error if the server closes the connection before
+		// sending the response
+		if( recvRet < 0 ) {
+		    daemon_log(LOG_ERR, 
+			    "Command failed: did not receive server response");
+		    zero_string(password);
+		    close(daemon);
+		    return 1;
+		}
+
+		int sizeCmd = parseResponse(response, value);
+
+		if( sizeCmd < 0 ) {
+		    daemon_log(LOG_ERR,
+			    "Command failed: received invalid response");
+		    zero_string(password);
+		    close(daemon);
+		    return 1;
+		}
+
+		// Incomplete command, wait for more data
+		if( sizeCmd == 0 ) {
+		    if( recvRet == 0 ) {
+			daemon_log(LOG_ERR, 
+				"Command failed: did not receive server response");
+			zero_string(password);
+			close(daemon);
+			return 1;
+		    }else{
+			continue;
+		    }
+		}
+
+		noResponse = false;
+	    }
+	}
+
+	// Verify the response
+	if( value == BAD ) {
+	    daemon_log(LOG_ERR,
+		    "Command failed: server reports invalid command");
+	}else if( value == OK ) {
+	    daemon_log(LOG_INFO,
+		    "Command successful");
+	}else{
+	    daemon_log(LOG_ERR,
+		    "Command failed: received invalid response");
+	}
+
+	zero_string(password);
+	close(daemon);
     }else{
+	// This program is really only useful with root privileges. 
+	// Also, this program should not be setuid root
+	if( geteuid() == 0 && getuid() != 0 ) {
+	    cerr << "Don't run this program setuid...it is a bad idea." << endl;
+	    return 1;
+	}
+
+	if( getuid() != 0 ) {
+	    cerr << "You are not root." 
+		 << " This program is useless without root privileges." << endl;
+	    return 1;
+	}
+
+	// Process options for the daemon
+	if(path == NULL) {
+	    if(optind >= argc) {
+		cerr << "Virtual machine not specified" << endl;
+		cerr << "Usage: " << argv[0] << USAGE << endl;
+		return 1;
+	    }
+	    path = argv[optind];
+	}
+
+
+	if( limit < 1 || limit > 100 ) {
+	    cerr << "Limit must be in range 1-100%" << endl;
+	    cerr << "Usage: " << argv[0] << USAGE << endl;
+	    return 1;
+	}
+
 	if( powerOff ) {
 	    if( !powerOffVM(path, user, password, hostname) ) return 1;
 
 	    // Zero the password
-	    int i = 0;
-	    while( password[i] != '\0' ) {
-		password[i] = '\0';
-		i++;
-	    }
-	    free(password);
+	    zero_string(password);
 	}else if( powerOn ) {
 	    if( daemon ) {
 		// Daemon isn't running, so start it
@@ -219,6 +463,12 @@ int main(int argc, char *argv[]) {
 		    // Daemon successfully started, end parent
 		    return 0;
 		}
+	    }
+
+	    // Regardless, create a pid file
+	    if( daemon_pid_file_create() < 0 ) {
+		daemon_log(LOG_ERR, L_LOG_STR("daemon_pid_file_create"));
+		return 1;
 	    }
 
 	    if( !powerOnVM(path, user, password, hostname) ) return 1;
@@ -252,12 +502,7 @@ int die(int cmdSocket, int main_pipe, char *password, int cpulimit_pid,
 {
     // Zero the password
     if( password != NULL ) {
-	int i = 0;
-	while( password[i] != '\0' ) {
-	    password[i] = '\0';
-	    i++;
-	}
-	free(password);
+	zero_string(password);
     }
 
     // Close the listening socket
@@ -399,7 +644,7 @@ int launchCPULimit(pid_t pid, int limit, int *cpulimitfd, int *mainfd) {
 		daemon_log(LOG_ERR, "cpulimit process failed. Bailing!");
 		exit(1);
 	    }
-	}while(msg != CPULIMIT_END );
+	}while(msg != CPULIMIT_END);
 
 	daemon_log(LOG_INFO, "cpulimit received end command. Stopping!");
 	exit(1);
@@ -638,7 +883,8 @@ int controlLoop(pid_t vmPid, int limit, int checkVMPeriod, char *port,
 			string cmd_user, cmd_password;
 			vm_cmd cmd;
 
-			sizeCmd = parseCommand(in_cmd, cmd_user, cmd_password, cmd);
+			sizeCmd = parseCommand(in_cmd, cmd_user, 
+				cmd_password, cmd);
 
 			if( sizeCmd < 0 ) {
 			    // Invalid command received
@@ -655,7 +901,8 @@ int controlLoop(pid_t vmPid, int limit, int checkVMPeriod, char *port,
 			    }
 
 			    string response = BAD + END;
-			    if( !send_all(i, const_cast<char *>(response.c_str()), 
+			    if( !send_all(i, 
+					const_cast<char *>(response.c_str()), 
 					response.length()))
 			    {
 				return die(cmdSocket, mainfd, password, 
@@ -669,6 +916,8 @@ int controlLoop(pid_t vmPid, int limit, int checkVMPeriod, char *port,
 			    if (cmd_user != string(user) || 
 				cmd_password != string(password) ) 
 			    {
+				daemon_log(LOG_WARNING, 
+					"invalid credentials on socket=%d", i);
 				string response = BAD + END;
 				if( !send_all(i, 
 					    const_cast<char *>(response.c_str()), 
@@ -791,7 +1040,7 @@ int controlLoop(pid_t vmPid, int limit, int checkVMPeriod, char *port,
 
 int recvCommand(int socket, string &recvBuf) 
 {
-    const int BLOCK_SIZE = 1024; // 1/4 K
+    const int BLOCK_SIZE = 1024; // 1 KB
 
     // leave room for null-terminator
     char *recvStr = new char[BLOCK_SIZE+1];
@@ -805,6 +1054,11 @@ int recvCommand(int socket, string &recvBuf)
 	if( num_recv == -1 ) {
 	    if( errno == EAGAIN || errno == EINTR ) {
 		done = true;
+	    }else if( errno == ECONNRESET ) {
+		daemon_log(LOG_INFO, L_LOG_STR("recv"));
+		recvBuf.clear();
+		delete recvStr;
+		return 0;
 	    }else{
 		daemon_log(LOG_ERR, L_LOG_STR("recv"));
 		delete recvStr;
@@ -812,7 +1066,6 @@ int recvCommand(int socket, string &recvBuf)
 	    }
 	}else if( num_recv == 0 ) {
 	    // Inform caller of socket shutdown on client-side
-	    recvBuf.clear();
 	    delete recvStr;
 	    return 0;
 	}else{
@@ -867,6 +1120,46 @@ int parseCommand(string &in_cmd, string &user, string &password, vm_cmd &cmd) {
     return endPos + END.length();
 }
 
+/**
+ * @return  < 0, if the response is invalid; 0, if the response is incomplete;
+ * 	    the length of the response, if the response was parsed correctly
+ */
+int parseResponse(string &response, string &value) {
+    // Find the end of the response
+    int endPos = response.find(END);
+    if( endPos == static_cast<int>(string::npos) ) return 0;
+
+    value = response.substr(0, endPos);
+
+    if( value != OK && value != BAD ) return -1;
+    
+    return endPos + END.length();
+}
+
+/*
+ * @return < 0, if there was an error parsing the command; 0, if end of file was
+ *         reached; > 0, if successful
+ */
+int parseConfigLine(FILE *stream, string &option, string &value) {
+    string line;
+
+    int c = fgetc(stream);
+    while( c != EOF && ((char)c) != '\n' && ((char)c) != '\r') {
+	line.append(1, (char)c);
+	c = fgetc(stream);
+    }
+    if( feof(stream) ) return 0;
+    else if( ferror(stream) ) return -1;
+
+    int delimPos = line.find(CONFIG_DELIM);
+    if( delimPos == static_cast<int>(string::npos) ) return -1;
+
+    option = line.substr(0, delimPos);
+    value = line.substr(delimPos+1, line.length() - delimPos);
+
+    return 1;
+}
+
 pid_t daemonize() {
     pid_t retPid;
     if( daemon_reset_sigs(-1) < 0 ) {
@@ -891,10 +1184,6 @@ pid_t daemonize() {
 	    return -1;
 	}
 
-	if( daemon_pid_file_create() < 0 ) {
-	    daemon_log(LOG_ERR, L_LOG_STR("daemon_pid_file_create"));
-	    return -1;
-	}
     }
     return retPid;
 }
