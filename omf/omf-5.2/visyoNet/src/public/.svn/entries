@@ -1,46 +1,0 @@
-9
-
-dir
-294
-http://svn.mytestbed.net/OMF/branches/release-5.2/visyoNet/src/public
-http://svn.mytestbed.net/OMF
-
-
-
-2009-01-27T03:55:22.613070Z
-2
-thierry
-
-
-svn:special svn:externals svn:needs-lock
-
-
-
-
-
-
-
-
-
-
-
-bcdc32af-9446-429b-bbb7-62060553c30d
-
-test
-dir
-
-visyonet
-dir
-
-images
-dir
-
-xxx
-dir
-
-javascripts
-dir
-
-stylesheets
-dir
-
