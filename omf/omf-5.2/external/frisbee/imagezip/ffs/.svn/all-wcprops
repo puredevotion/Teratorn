@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ffs
+END
+ffs.c
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ffs/ffs.c
+END
+disklabel.h
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ffs/disklabel.h
+END
+ffs.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ffs/ffs.h
+END
+GNUmakefile.in
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ffs/GNUmakefile.in
+END
+fs.h
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ffs/fs.h
+END

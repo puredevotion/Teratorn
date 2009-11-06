@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/test/database
+END
+aruba.sql
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/test/database/aruba.sql
+END
+conf-room.sql
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/test/database/conf-room.sql
+END

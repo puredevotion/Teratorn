@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/ruby/visyonet
+END
+session.rb
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/ruby/visyonet/session.rb
+END
+context.rb
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/ruby/visyonet/context.rb
+END
+visFlashServer.rb
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/ruby/visyonet/visFlashServer.rb
+END
+visHttpServer.rb
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/ruby/visyonet/visHttpServer.rb
+END

@@ -1,0 +1,77 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/OMF/!svn/ver/289/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available
+END
+cmcStub.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/cmcStub.yaml
+END
+saveimage.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/OMF/!svn/ver/288/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/saveimage.yaml
+END
+cmc.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/cmc.yaml
+END
+pxe.yaml.winlab
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.winlab
+END
+inventory.yaml.winlab
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/inventory.yaml.winlab
+END
+login.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/login.yaml
+END
+pxe.yaml.nicta
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.nicta
+END
+frisbee.yaml.winlab
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/frisbee.yaml.winlab
+END
+inventory.yaml.nicta
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/inventory.yaml.nicta
+END
+master.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/master.yaml
+END
+result.yaml.nicta
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/result.yaml.nicta
+END
+frisbee.yaml.nicta
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/OMF/!svn/ver/289/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/available/frisbee.yaml.nicta
+END

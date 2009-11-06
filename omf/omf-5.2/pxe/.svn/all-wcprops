@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/OMF/!svn/ver/279/branches/release-5.2/pxe
+END
+nicta.mk
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/OMF/!svn/ver/279/branches/release-5.2/pxe/nicta.mk
+END
+TODO
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/OMF/!svn/ver/279/branches/release-5.2/pxe/TODO
+END
+INSTALL
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/OMF/!svn/ver/279/branches/release-5.2/pxe/INSTALL
+END
+ChangeLog
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/OMF/!svn/ver/279/branches/release-5.2/pxe/ChangeLog
+END
+COPYING
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/OMF/!svn/ver/279/branches/release-5.2/pxe/COPYING
+END
+site.mk
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/OMF/!svn/ver/279/branches/release-5.2/pxe/site.mk
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/OMF/!svn/ver/279/branches/release-5.2/pxe/Makefile
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/OMF/!svn/ver/279/branches/release-5.2/pxe/README
+END

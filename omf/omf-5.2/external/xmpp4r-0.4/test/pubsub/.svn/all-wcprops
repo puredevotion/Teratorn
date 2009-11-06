@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/pubsub
+END
+tc_subscriptionconfig.rb
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/pubsub/tc_subscriptionconfig.rb
+END
+tc_nodeconfig.rb
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/pubsub/tc_nodeconfig.rb
+END
+tc_helper.rb
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/pubsub/tc_helper.rb
+END

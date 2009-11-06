@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter
+END
+consoleoutputters.rb
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/consoleoutputters.rb
+END
+rollingfileoutputter.rb
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/rollingfileoutputter.rb
+END
+emailoutputter.rb
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/emailoutputter.rb
+END
+iooutputter.rb
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/iooutputter.rb
+END
+outputterfactory.rb
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/outputterfactory.rb
+END
+staticoutputter.rb
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/staticoutputter.rb
+END
+remoteoutputter.rb
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/remoteoutputter.rb
+END
+datefileoutputter.rb
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/datefileoutputter.rb
+END
+fileoutputter.rb
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/fileoutputter.rb
+END
+outputter.rb
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/outputter.rb
+END
+syslogoutputter.rb
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/outputter/syslogoutputter.rb
+END

@@ -177,68 +177,69 @@ int main(int argc, char *argv[]) {
 	}
     }
 
-    FILE *configFile = fopen(config, "r");
-    if( configFile == NULL ) {
-	// This is not a critical error, try to proceed
-	cerr << "Could not open config file '" << config << "': " <<
-	    strerror(errno) << endl;
-    }else{
-	// Parse the config file
-	int line = 1;
-	bool readMore = true;
-	while( readMore ) {
-	    string option;
-	    string value;
-	    int parseRet = parseConfigLine(configFile, option, value);
+    if( !access(config, R_OK) ) {
+	FILE *configFile = fopen(config, "r");
+	if( configFile == NULL ) {
+	    // This is not a critical error, try to proceed
+	    cerr << "Could not open config file '" << config << "': " <<
+		strerror(errno) << endl;
+	}else{
+	    // Parse the config file
+	    int line = 1;
+	    bool readMore = true;
+	    while( readMore ) {
+		string option;
+		string value;
+		int parseRet = parseConfigLine(configFile, option, value);
 
-	    if( parseRet < 0 ) {
-		cerr << "encountered error when reading config file at line " << line
-		     << endl;
-		readMore = false;
-	    }else if( parseRet == 0 ) {
-		fclose(configFile);
-		readMore = false;
-	    }else{
-		char *valueStr = new char[value.length()];
-		strncpy(valueStr, value.c_str(), value.length());
-
-		/*
-		 * valid options are (identifer = type of value)
-		 * hostname = string
-		 * port = string
-		 * remote = integer (non-zero means true, zero means false)
-		 * user = string
-		 * password = string
-		 * limit = integer (between 1 and 100)
-		 * vmpath = string
-		 */
-		if( option == "hostname" ) {
-		    hostname = valueStr;
-		}else if( option == "port" ) {
-		    port = valueStr;
-		}else if( option == "remote" ) {
-		    int tmpVal = strtol(valueStr, NULL, 10);
-		    if( tmpVal == 0 ) local = true;
-		    else local = false;
-		    delete valueStr;
-		}else if( option == "user" ) {
-		    user = valueStr;
-		}else if( option == "password" ) {
-		    password = valueStr;
-		}else if( option == "limit" ) {
-		    limit = strtol(valueStr, NULL, 10);
-		    delete valueStr;
-		}else if( option == "vmpath" ) {
-		    path = valueStr;
+		if( parseRet < 0 ) {
+		    cerr << "encountered error when reading config file at line " << line
+			 << endl;
+		    readMore = false;
+		}else if( parseRet == 0 ) {
+		    fclose(configFile);
+		    readMore = false;
 		}else{
-		    cerr << "invalid option in config file '" << option << "', line "
-			<< line << endl;
+		    char *valueStr = new char[value.length()];
+		    strncpy(valueStr, value.c_str(), value.length());
+
+		    /*
+		     * valid options are (identifer = type of value)
+		     * hostname = string
+		     * port = string
+		     * remote = integer (non-zero means true, zero means false)
+		     * user = string
+		     * password = string
+		     * limit = integer (between 1 and 100)
+		     * vmpath = string
+		     */
+		    if( option == "hostname" ) {
+			hostname = valueStr;
+		    }else if( option == "port" ) {
+			port = valueStr;
+		    }else if( option == "remote" ) {
+			int tmpVal = strtol(valueStr, NULL, 10);
+			if( tmpVal == 0 ) local = true;
+			else local = false;
+			delete valueStr;
+		    }else if( option == "user" ) {
+			user = valueStr;
+		    }else if( option == "password" ) {
+			password = valueStr;
+		    }else if( option == "limit" ) {
+			limit = strtol(valueStr, NULL, 10);
+			delete valueStr;
+		    }else if( option == "vmpath" ) {
+			path = valueStr;
+		    }else{
+			cerr << "invalid option in config file '" << option << "', line "
+			    << line << endl;
+		    }
 		}
+		line++;
 	    }
-	    line++;
 	}
     }
-
 
     if( (!powerOn && !powerOff) || !user ) {
 	cerr << "Must specify -u or -d and a user" << endl;

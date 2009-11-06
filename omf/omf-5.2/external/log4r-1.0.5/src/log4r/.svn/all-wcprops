@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r
+END
+logger.rb
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/logger.rb
+END
+repository.rb
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/repository.rb
+END
+configurator.rb
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/configurator.rb
+END
+logevent.rb
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/logevent.rb
+END
+config.rb
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/config.rb
+END
+yamlconfigurator.rb
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/yamlconfigurator.rb
+END
+loggerfactory.rb
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/loggerfactory.rb
+END
+staticlogger.rb
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/staticlogger.rb
+END
+logserver.rb
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/logserver.rb
+END
+base.rb
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/src/log4r/base.rb
+END

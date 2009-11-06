@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/fat
+END
+dosfs.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/fat/dosfs.h
+END
+fat_fat.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/fat/fat_fat.c
+END
+fat_glue.c
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/fat/fat_glue.c
+END
+GNUmakefile.in
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/fat/GNUmakefile.in
+END
+fat_glue.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/fat/fat_glue.h
+END
+fat_boot.c
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/fat/fat_boot.c
+END

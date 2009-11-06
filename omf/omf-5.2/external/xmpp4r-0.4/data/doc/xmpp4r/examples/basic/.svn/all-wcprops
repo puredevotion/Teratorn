@@ -1,0 +1,119 @@
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic
+END
+roster.rb
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/roster.rb
+END
+echo.rb
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/echo.rb
+END
+client.rb
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/client.rb
+END
+muc_owner_config.rb
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/muc_owner_config.rb
+END
+register.rb
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/register.rb
+END
+remove_registration.rb
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/remove_registration.rb
+END
+versionbot.rb
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/versionbot.rb
+END
+rosterprint.rb
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/rosterprint.rb
+END
+jabbersend.rb
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/jabbersend.rb
+END
+mucinfo.rb
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/mucinfo.rb
+END
+tune_server.rb
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/tune_server.rb
+END
+component.rb
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/component.rb
+END
+mucsimplebot.rb
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/mucsimplebot.rb
+END
+mass_sender.rb
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/mass_sender.rb
+END
+rosterwatch.rb
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/rosterwatch.rb
+END
+rosterrename.rb
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/rosterrename.rb
+END
+change_password.rb
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/change_password.rb
+END
+send_vcard.rb
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/send_vcard.rb
+END
+tune_client.rb
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/basic/tune_client.rb
+END

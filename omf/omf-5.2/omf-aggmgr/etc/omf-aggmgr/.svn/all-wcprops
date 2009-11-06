@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/OMF/!svn/ver/289/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr
+END
+def_gridservices_log.xml
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/def_gridservices_log.xml
+END
+gridservices.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/etc/omf-aggmgr/gridservices.cfg
+END

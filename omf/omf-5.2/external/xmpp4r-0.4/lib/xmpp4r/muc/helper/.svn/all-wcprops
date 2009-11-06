@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/muc/helper
+END
+simplemucclient.rb
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/muc/helper/simplemucclient.rb
+END
+mucclient.rb
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/muc/helper/mucclient.rb
+END
+mucbrowser.rb
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/muc/helper/mucbrowser.rb
+END

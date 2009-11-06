@@ -1,0 +1,155 @@
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config
+END
+nodeagent.yaml.winlab
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/nodeagent.yaml.winlab
+END
+services
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/services
+END
+rcS
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/rcS
+END
+inittab
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/inittab
+END
+makeLink
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/makeLink
+END
+enroll
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/enroll
+END
+busybox-nicta.config
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/busybox-nicta.config
+END
+group
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/group
+END
+busybox-1.5.0.config
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/busybox-1.5.0.config
+END
+linux-nicta.config
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/linux-nicta.config
+END
+rcS.actual
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/rcS.actual
+END
+linux-orbit-pxe-2.6.25.1.config
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/linux-orbit-pxe-2.6.25.1.config
+END
+passwd
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/passwd
+END
+linux-orbit-pxe-2.6.20.7.config
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/linux-orbit-pxe-2.6.20.7.config
+END
+default.orbit
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/default.orbit
+END
+nodeagent.yaml.nicta
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/nodeagent.yaml.nicta
+END
+linux-orbit-pxe-2.6.24.4.config
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/linux-orbit-pxe-2.6.24.4.config
+END
+busybox-1.8.2.config
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/busybox-1.8.2.config
+END
+nodeagent.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/nodeagent.yaml
+END
+linux-orbit-pxe-2.6.29.2.config
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/linux-orbit-pxe-2.6.29.2.config
+END
+udhcp.script
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/udhcp.script
+END
+linux-orbit-pxe-2.6.23.9.config
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/linux-orbit-pxe-2.6.23.9.config
+END
+rcS.actual.winlab
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/rcS.actual.winlab
+END
+busybox-1.10.1.config
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/busybox-1.10.1.config
+END
+passwd.winlab
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/OMF/!svn/ver/279/branches/release-5.2/pxe/config/passwd.winlab
+END

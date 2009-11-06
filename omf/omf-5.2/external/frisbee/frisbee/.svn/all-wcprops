@@ -1,0 +1,173 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee
+END
+Makefile.sa
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/Makefile.sa
+END
+trace.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/trace.c
+END
+decls.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/decls.h
+END
+control
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/control
+END
+mkinstalldirs
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/mkinstalldirs
+END
+utils.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/utils.c
+END
+.in
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/.in
+END
+trace.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/trace.h
+END
+utils.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/utils.h
+END
+ChangeLog
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/ChangeLog
+END
+server.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/server.c
+END
+client.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/client.c
+END
+README.sa
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/README.sa
+END
+event.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/event.c
+END
+log.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/log.c
+END
+TODO
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/TODO
+END
+INSTALL
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/INSTALL
+END
+version.c
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/version.c
+END
+event.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/event.h
+END
+log.h
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/log.h
+END
+COPYING
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/COPYING
+END
+missing
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/missing
+END
+stamp-h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/stamp-h
+END
+network.c
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/network.c
+END
+queue.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/queue.h
+END
+aclocal.m4
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/aclocal.m4
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/Makefile
+END
+install-sh
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/frisbee/install-sh
+END

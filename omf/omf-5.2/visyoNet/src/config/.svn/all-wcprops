@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/config
+END
+testSource.xml
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/config/testSource.xml
+END
+visyonet.xml
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/config/visyonet.xml
+END
+db.xml
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/config/db.xml
+END
+query1.xml
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/config/query1.xml
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/config/README.txt
+END
+mapping1_svg.rb
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/config/mapping1_svg.rb
+END
+visMapping1.xml
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/config/visMapping1.xml
+END
+mapping1.rb
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/OMF/!svn/ver/279/branches/release-5.2/visyoNet/src/config/mapping1.rb
+END

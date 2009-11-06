@@ -1,0 +1,34 @@
+9
+
+dir
+294
+http://svn.mytestbed.net/OMF/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/rpc
+http://svn.mytestbed.net/OMF
+
+
+
+2009-04-17T10:17:53.456929Z
+84
+cdw
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+bcdc32af-9446-429b-bbb7-62060553c30d
+
+helper
+dir
+
+iq
+dir
+

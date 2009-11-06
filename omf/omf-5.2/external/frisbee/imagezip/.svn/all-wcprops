@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip
+END
+Makefile.sa
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/Makefile.sa
+END
+global.h
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/global.h
+END
+imagezip.c
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/imagezip.c
+END
+crc.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/crc.c
+END
+imageunzip.c
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/imageunzip.c
+END
+imagedump.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/imagedump.c
+END
+GNUmakefile.in
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/GNUmakefile.in
+END
+sliceinfo.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/sliceinfo.h
+END
+imagehdr.h
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/imagehdr.h
+END
+imagehash.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/imagehash.c
+END
+queue.h
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/queue.h
+END
+imagezip.8
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/imagezip.8
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/Makefile
+END
+imagedump.8
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/imagedump.8
+END
+imageunzip.8
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/imageunzip.8
+END

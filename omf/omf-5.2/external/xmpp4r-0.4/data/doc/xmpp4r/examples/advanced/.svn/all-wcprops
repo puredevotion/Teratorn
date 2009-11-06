@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced
+END
+recvfile.rb
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/recvfile.rb
+END
+minimuc.rb
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/minimuc.rb
+END
+xmpping.rb
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/xmpping.rb
+END
+fileserve.rb
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/fileserve.rb
+END
+getonline.rb
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/getonline.rb
+END
+xmppingrc.sample
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/xmppingrc.sample
+END
+fileserve.conf
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/fileserve.conf
+END
+rosterdiscovery.rb
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/rosterdiscovery.rb
+END
+migrate.rb
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/migrate.rb
+END
+gtkmucclient.rb
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/gtkmucclient.rb
+END
+sendfile.rb
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/sendfile.rb
+END
+sendfile.conf
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/sendfile.conf
+END
+versionpoll.rb
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/data/doc/xmpp4r/examples/advanced/versionpoll.rb
+END

@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/OMF/!svn/ver/279/branches/release-5.2/omf-resctl/etc/omf-resctl
+END
+nodeagentSlave_log.xml
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/OMF/!svn/ver/279/branches/release-5.2/omf-resctl/etc/omf-resctl/nodeagentSlave_log.xml
+END
+nodeagent.yaml.winlab
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/OMF/!svn/ver/279/branches/release-5.2/omf-resctl/etc/omf-resctl/nodeagent.yaml.winlab
+END
+nodeagent.yaml.nicta
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/OMF/!svn/ver/279/branches/release-5.2/omf-resctl/etc/omf-resctl/nodeagent.yaml.nicta
+END
+nodeagent_log.xml
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/OMF/!svn/ver/279/branches/release-5.2/omf-resctl/etc/omf-resctl/nodeagent_log.xml
+END
+nodeagent.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/OMF/!svn/ver/279/branches/release-5.2/omf-resctl/etc/omf-resctl/nodeagent.yaml
+END

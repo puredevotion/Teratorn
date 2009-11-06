@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/version
+END
+tc_helper.rb
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/version/tc_helper.rb
+END
+tc_iqqueryversion.rb
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/version/tc_iqqueryversion.rb
+END

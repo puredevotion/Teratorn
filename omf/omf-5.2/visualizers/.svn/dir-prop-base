@@ -1,0 +1,10 @@
+K 10
+svn:ignore
+V 47
+build
+.settings
+.project
+build.tar
+build-2.tar
+
+END

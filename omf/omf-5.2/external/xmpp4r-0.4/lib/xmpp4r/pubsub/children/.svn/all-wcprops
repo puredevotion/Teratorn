@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children
+END
+item.rb
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children/item.rb
+END
+event.rb
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children/event.rb
+END
+items.rb
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children/items.rb
+END
+subscription.rb
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children/subscription.rb
+END
+unsubscribe.rb
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children/unsubscribe.rb
+END
+publish.rb
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children/publish.rb
+END
+configuration.rb
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children/configuration.rb
+END
+subscription_config.rb
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children/subscription_config.rb
+END
+node_config.rb
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/lib/xmpp4r/pubsub/children/node_config.rb
+END

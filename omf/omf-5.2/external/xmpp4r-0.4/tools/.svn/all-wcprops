@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/tools
+END
+gen_requires.bash
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/tools/gen_requires.bash
+END
+xmpp4r-gemspec-test.rb
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/tools/xmpp4r-gemspec-test.rb
+END

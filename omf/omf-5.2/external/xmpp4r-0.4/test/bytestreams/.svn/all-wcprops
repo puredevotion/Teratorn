@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/bytestreams
+END
+tc_socks5bytestreams.rb
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/bytestreams/tc_socks5bytestreams.rb
+END
+tc_ibb.rb
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/bytestreams/tc_ibb.rb
+END

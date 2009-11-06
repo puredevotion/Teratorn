@@ -1,0 +1,10 @@
+K 10
+svn:ignore
+V 36
+build
+.project
+.settings
+.loadpath
+
+
+END

@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/debian/patches
+END
+02_emailoutputter-exception-reraise.patch
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/debian/patches/02_emailoutputter-exception-reraise.patch
+END
+01_emailoutputter-postpone-smtp.patch
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/debian/patches/01_emailoutputter-postpone-smtp.patch
+END
+02_emailoutputter-exception-reraise.patch.level-0.log
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/debian/patches/02_emailoutputter-exception-reraise.patch.level-0.log
+END
+01_emailoutputter-postpone-smtp.patch.level-0.log
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/debian/patches/01_emailoutputter-postpone-smtp.patch.level-0.log
+END
+02_emailoutputter-exception-reraise.patch.level-1.log
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/debian/patches/02_emailoutputter-exception-reraise.patch.level-1.log
+END
+01_emailoutputter-postpone-smtp.patch.level-1.log
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/OMF/!svn/ver/279/branches/release-5.2/external/log4r-1.0.5/debian/patches/01_emailoutputter-postpone-smtp.patch.level-1.log
+END

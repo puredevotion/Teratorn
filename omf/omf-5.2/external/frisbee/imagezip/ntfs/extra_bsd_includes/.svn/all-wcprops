@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ntfs/extra_bsd_includes
+END
+gconv.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ntfs/extra_bsd_includes/gconv.h
+END
+wcsmbsload.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ntfs/extra_bsd_includes/wcsmbsload.h
+END
+linux_types.h
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/OMF/!svn/ver/279/branches/release-5.2/external/frisbee/imagezip/ntfs/extra_bsd_includes/linux_types.h
+END

@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/OMF/!svn/ver/288/branches/release-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs
+END
+timer.rb
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs/timer.rb
+END
+abstractService.rb
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs/abstractService.rb
+END
+gridService.rb
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/OMF/!svn/ver/279/branches/release-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs/gridService.rb
+END
+abstractDaemon.rb
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/OMF/!svn/ver/288/branches/release-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs/abstractDaemon.rb
+END

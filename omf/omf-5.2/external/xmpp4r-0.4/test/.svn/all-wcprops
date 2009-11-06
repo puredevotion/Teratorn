@@ -1,0 +1,113 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test
+END
+tc_rexml.rb
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_rexml.rb
+END
+tc_class_names.rb
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_class_names.rb
+END
+tc_stream.rb
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_stream.rb
+END
+tc_iqquery.rb
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_iqquery.rb
+END
+tc_idgenerator.rb
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_idgenerator.rb
+END
+tc_presence.rb
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_presence.rb
+END
+tc_xmppstanza.rb
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_xmppstanza.rb
+END
+tc_streamError.rb
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_streamError.rb
+END
+tc_streamSend.rb
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_streamSend.rb
+END
+tc_jid.rb
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_jid.rb
+END
+tc_streamparser.rb
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_streamparser.rb
+END
+tc_iq.rb
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_iq.rb
+END
+ts_xmpp4r.rb
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/ts_xmpp4r.rb
+END
+tc_errors.rb
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_errors.rb
+END
+tc_streamComponent.rb
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_streamComponent.rb
+END
+tc_client.rb
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_client.rb
+END
+tc_callbacks.rb
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_callbacks.rb
+END
+tc_message.rb
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/OMF/!svn/ver/279/branches/release-5.2/external/xmpp4r-0.4/test/tc_message.rb
+END
