@@ -14,15 +14,21 @@ my $COMM = "omf-common";
 my $EXP = "omf-expctl";
 
 my $USAGE = <<USAGE;
-Usage: $0 <$AGG|$COMM|$EXP>
+Usage: $0 <$AGG|$COMM|$EXP> [test]
 USAGE
 
-die($USAGE) if( @ARGV != 1 );
+die($USAGE) if( @ARGV < 1 || @ARGV > 2 );
 
 my $PKG = $ARGV[0];
 
 if( $PKG !~ /^($AGG|$COMM|$EXP)$/ ) {
     die($USAGE);
+}
+
+my $TEST = 0;
+if( @ARGV == 2 ) {
+    $TEST = 1;
+    print "TESTING---NOT COPYING\n";
 }
 
 # Special case for expctl
@@ -38,8 +44,12 @@ my $tmp_ref = &diffFiles("$OMF_HOST_ROOT/$PKG/",
 
 foreach my $key (keys %{ $tmp_ref } ) {
     print "sudo cp -f $key $tmp_ref->{$key}\n";
-    print `sudo cp -f $key $tmp_ref->{$key}`;
+    if( !$TEST ) {
+	print `sudo cp -f $key $tmp_ref->{$key}`;
+    }
 }
+
+print "!!! Remember to restart omf-aggmgr (/etc/init.d/omf-aggmgr restart)\n";
 
 sub diffFiles {
     my $orig = $_[0];

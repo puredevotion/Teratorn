@@ -89,10 +89,6 @@ class CmcStubService < GridService
   s_param :y, 'ycoord', 'y coordinates of location'
   s_param :domain, 'domain', 'domain for request.'
   service 'reset' do |req, res|
-    x = getParam(req, 'x')
-    y = getParam(req, 'y')
-    domain = getParam(req, 'domain')
-    reboot(x,y,domain,req)
     self.responseOK(res)
   end
 
@@ -100,38 +96,22 @@ class CmcStubService < GridService
   # Implement 'offHard' service using the 'service' method of AbstractService
   # In this Stub CMC, this will always return HTTP OK
   # 
-  # NOTE: 
-  # At NICTA, we do not have the CM card operational on our nodes yet...
-  # We use the NA's 'REBOOT' command to implement a 'offHard'
-  #
   s_info 'Switch off a node HARD (immediately) at a specific coordinate'
   s_param :x, 'xcoord', 'x coordinates of location'
   s_param :y, 'ycoord', 'y coordinates of location'
   s_param :domain, 'domain', 'domain for request.'
   service 'offHard' do |req, res|
-    x = getParam(req, 'x')
-    y = getParam(req, 'y')
-    domain = getParam(req, 'domain')
-    reboot(x,y,domain,req)
     self.responseOK(res)
   end
   
   #
   # Implement 'offSoft' service using the 'service' method of AbstractService
   #
-  # NOTE: 
-  # At NICTA, we do not have the CM card operational on our nodes yet...
-  # We use the NA's 'REBOOT' command to implement a 'offSoft'
-  #
   s_info 'Switch off a node SOFT (execute halt) at a specific coordinate'
   s_param :x, 'xcoord', 'x coordinates of location'
   s_param :y, 'ycoord', 'y coordinates of location'
   s_param :domain, 'domain', 'domain for request.'
   service 'offSoft' do |req, res|
-    x = getParam(req, 'x')
-    y = getParam(req, 'y')
-    domain = getParam(req, 'domain')
-    reboot(x,y,domain,req)
     self.responseOK(res)
   end
 
@@ -147,33 +127,14 @@ class CmcStubService < GridService
   #
   # Implement 'allOffSoft' service using the 'service' method of AbstractService
   #
-  # NOTE: 
-  # At NICTA, we do not have the CM card operational on our nodes yet...
-  # We use the NA's 'REBOOT' command to implement a 'allOffSoft'
-  #
   s_info 'Switch off ALL nodes SOFT (execute halt)'
   s_param :domain, '[domain]', 'domain for request.'
   service 'allOffSoft' do |req, res|
-    domain = getParam(req, 'domain')
-    tb = getTestbedConfig(req, @@config)
-    inventoryURL = tb['inventory_url']
-    nodes = listAllNodes(inventoryURL, domain)
-    nodes.each { |n|
-      x = n[0]; y = n[1]
-      reboot(x,y,domain,req)
-    }
     self.responseOK(res)
   end
 
   #
   # Implement 'getAllNodes' service using the 'service' method of AbstractService
-  #
-  # NOTE: 
-  # At NICTA, we do not have the CM card operational on our nodes yet...
-  # We use the information in the CMC Stub config file to implement a 'getAllNodes'
-  #
-  # TODO: if still not CM card operational after a while, then this should 
-  # really use information from the Inventory instead
   #
   s_info 'Returns a list of all nodes in the testbed'
   s_param :domain, '[domain]', 'domain for request.'
@@ -188,13 +149,6 @@ class CmcStubService < GridService
 
   #
   # Implement 'allStatus' service using the 'service' method of AbstractService
-  #
-  # NOTE: 
-  # At NICTA, we do not have the CM card operational on our nodes yet...
-  # We use the information in the CMC Stub config file to implement a 'allStatus'
-  #
-  # TODO: if still not CM card operational after a while, then this should 
-  # really use information from the Inventory instead
   #
   s_info 'Returns the status of all nodes in the testbed'
   s_param :domain, '[domain]', 'domain for request.'

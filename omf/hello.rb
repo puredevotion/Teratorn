@@ -9,7 +9,7 @@ defGroup('source', [1,1]) {|node|
 	'localHost' => '192.168.3.128',
 	'localPort' => 3001,
 	'packetSize' => 256,
-	'rate' => 8192
+	'rate' => 8192 # bits per second
     })
 }
 
