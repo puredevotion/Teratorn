@@ -1,0 +1,5 @@
+limit=20
+user=changeme
+password=changeme
+vmpath=change/me.vmx
+remote=0
