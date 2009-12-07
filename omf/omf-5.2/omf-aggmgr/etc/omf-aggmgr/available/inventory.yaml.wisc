@@ -1,0 +1,25 @@
+# NOTE: use only 'spaces' to indent !
+# ('tab' indents are not supported by the ruby yaml parser used to read this file)
+#
+# This is the Config file for the Inventory GridService on the NICTA platform
+#
+---
+inventory:
+
+  testbed:
+    default:
+      # Name of the Database Server
+      host: localhost
+      # Username and password to access the database server
+      user: omf
+      password: omf
+      # Name of the database to use
+      database: inventory
+      # IP/Hostname of the XMPP server
+      xmpp_server: 192.168.3.1
+      # The discovery user -- listens for new DISCOVER messages from nodes
+      discover_user: discoverd
+      # The password for the user
+      discover_pass: 123
+      # The already created Pub/Sub node used for discovery
+      discover_pubsub_node: discoverd

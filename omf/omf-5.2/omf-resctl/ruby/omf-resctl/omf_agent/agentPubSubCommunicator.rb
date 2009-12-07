@@ -35,6 +35,8 @@
 #
 require "omf-common/omfPubSubService"
 require 'omf-common/lineSerializer'
+require 'omf-common/ifconfig'
+require 'timeout'
 
 #
 # This class defines a Communicator entity using the Publish/Subscribe paradigm.
@@ -47,6 +49,8 @@ class AgentPubSubCommunicator < MObject
   DOMAIN = "Domain"
   SYSTEM = "System"
   SESSION = "Session"
+  DISCOVER_TIMEOUT = 30
+  DISCOVER_RETRY = 3
 
   include Singleton
   @@instantiated = false
@@ -140,6 +144,67 @@ class AgentPubSubCommunicator < MObject
     # Set some internal attributes...
     @@IPaddr = getControlAddr()
     
+    # Here, need to login Jabber server as the discovery user name
+    # and tell the aggregate manager the control IP for this node
+    begin
+	# Create the Service Helper for the discover user
+	@@service = OmfPubSubService.new(@@IPaddr, "123", jid_suffix)
+   
+	# Set up the event callback
+	discQueue = Queue.new
+	@@service.add_event_callback { |event|
+	    discQueue << event
+	}
+
+	discover_pubsub_node = NodeAgent.instance.config('comm')['discover_pubsub_node']
+	full_path = "/#{DOMAIN}/#{SYSTEM}/#{discover_pubsub_node}"
+	@@service.join_pubsub_node(full_path)
+
+	# Send the initialization command -- see discoveryCommunicator in omf-aggmgr for format
+	cfg = IfconfigWrapper.new.parse
+	mac_addr = cfg[NodeAgent.instance.config('comm')['discover_if']].mac
+	new_ip = @@IPaddr
+	
+	completeDiscovery = false
+	retryCount = 0
+	while !completeDiscovery 
+	    begin
+		status = Timeout::timeout(DISCOVER_TIMEOUT) {
+		    message = "DISCOVER #{mac_addr} #{new_ip}"
+		    item = Jabber::PubSub::Item.new
+		    msg = Jabber::Message.new(nil, message)
+		    item.add(msg)
+		    @@service.publish_to_node(full_path, item)
+		    debug "Sending IP to aggmgr: #{message}"
+
+		    # Receive ACK from initialization command
+		    while event = discQueue.pop
+			response = event.first_element("items")\
+					.first_element("item")\
+					.first_element("message")\
+					.first_element("body").text
+			if (response == "OK #{item.id} #{mac_addr} #{new_ip}") 
+			    completeDiscovery = true
+			    break
+			end
+		    end
+		}
+	    rescue Timeout::Error => terr
+		# Ignore exception and retry
+		retryCount += 1
+		if (retryCount >= 3)
+		    raise terr
+		end
+	    end
+	end
+	
+	# End the discover session
+	@@service.quit
+    rescue Exception => ex
+	error "Failed to complete node discovery with aggmgr '#{jid_suffix}' - Error: '#{ex}'"
+	exit 1
+    end
+
     # Create a Service Helper to interact with the PubSub Server
     begin
       @@service = OmfPubSubService.new(@@IPaddr, "123", jid_suffix)

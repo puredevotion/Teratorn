@@ -4,9 +4,9 @@
 defGroup('source', [1,1]) {|node|
 
     node.prototype("test:proto:udp_sender", {
-	'destinationHost' => '192.168.3.128',
+	'destinationHost' => '192.168.3.100',
 	'destinationPort' => 3000,
-	'localHost' => '192.168.3.128',
+	'localHost' => '192.168.3.100',
 	'localPort' => 3001,
 	'packetSize' => 256,
 	'rate' => 8192 # bits per second
@@ -19,7 +19,7 @@ defGroup('source', [1,1]) {|node|
 defGroup('sink', [1,1]) {|node|
 
     node.prototype("test:proto:udp_receiver", {
-	'localHost' => '192.168.3.128'
+	'localHost' => '192.168.3.100'
     })
 }
 

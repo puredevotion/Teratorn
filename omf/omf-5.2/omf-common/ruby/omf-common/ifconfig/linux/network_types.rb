@@ -1,7 +1,7 @@
 # $Id: network_types.rb,v 1.4 2004/02/21 07:44:59 daniel Exp $
 #
 
-require 'lib/ifconfig/common/network_types'
+require 'omf-common/ifconfig/common/network_types'
 
 #
 # Base class for IPX and Appletalk classes

@@ -104,7 +104,7 @@ class MySQLInventory < MObject
       reply=@my.query(query)
       # Check if the SQL result contains anything at all...
       # If so, then call the block of commands to process it
-      if (reply.num_rows() > 0)
+      if (reply != nil && reply.num_rows() > 0)
         reply.each() { |result|
           debug "SQL Reply: '#{result.to_s}'"
           yield(result)

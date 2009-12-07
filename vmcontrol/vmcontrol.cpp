@@ -756,7 +756,6 @@ int controlLoop(pid_t vmPid, int limit, int checkVMPeriod, char *port,
     map<int, string> incCmds;
 
     while(!stop) {
-	daemon_log(LOG_INFO, "Waiting for commands...");
 	int select_ret;
 
 	read_fds = saved;

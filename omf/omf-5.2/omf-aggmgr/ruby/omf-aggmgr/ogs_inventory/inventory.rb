@@ -31,6 +31,7 @@
 
 require 'omf-aggmgr/ogs/gridService'
 require 'omf-aggmgr/ogs_inventory/mySQLInventory'
+require 'omf-aggmgr/ogs_inventory/discoveryCommunicator.rb'
 
 #
 # This class defines a Service to access inventory information about available
@@ -60,6 +61,8 @@ class InventoryService < GridService
   # These are the current configuration parameters available for testbeds running OMF
   CONST_CONFIG_KEYS = [ 'x_max', 'y_max', 'pxe_url', 'cmc_url', 
                         'frisbee_url', 'frisbee_default_disk', 'saveimage_url', 'oml_url']
+
+
  
   # From Winlab, please fix/clean 
   #
@@ -464,10 +467,17 @@ class InventoryService < GridService
   #
   # Configure the service through a hash of options
   #
+  # Also starts the discovery service
+  #
   # - config = the Hash holding the config parameters for this service
   #
   def self.configure(config)
     @@config = config
+
+    # XXX This assumes that the domain is 'default', this could cause issues
+    # if the domain is changed
+    DiscoverPubSubCommunicator.instance.start(@@config['testbed']['default'])
+
   end
   
   #

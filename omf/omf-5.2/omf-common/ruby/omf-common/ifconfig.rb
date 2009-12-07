@@ -45,7 +45,7 @@ class IfconfigWrapper
   #
   def initialize(platform=nil,input=nil,netstat=nil)
     platform = self.get_os unless !platform.nil?
-    require "lib/ifconfig/linux/ifconfig"
+    require "omf-common/ifconfig/linux/ifconfig"
     @cfg = Ifconfig.new(input,netstat)
   end
   def parse

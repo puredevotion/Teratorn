@@ -1,7 +1,7 @@
 # $Id: ifconfig.rb,v 1.5 2004/02/21 07:44:59 daniel Exp $
 #
 
-require 'lib/ifconfig/common/ifconfig'
+require 'omf-common/ifconfig/common/ifconfig'
 
 class Ifconfig
   #
@@ -18,8 +18,8 @@ class Ifconfig
     end
     @verbose = verbose
 
-    require 'lib/ifconfig/linux/network_types'
-    require 'lib/ifconfig/linux/interface_types'
+    require 'omf-common/ifconfig/linux/network_types'
+    require 'omf-common/ifconfig/linux/interface_types'
 
     @ifaces = {}
 

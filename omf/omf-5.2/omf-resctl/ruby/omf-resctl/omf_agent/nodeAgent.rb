@@ -588,6 +588,14 @@ IO.popen("lspci | grep 'Ethernet controller: Atheros' | wc -l") {|p|
   end
 }
 
+IO.popen("lsusb | grep 'Atheros' | wc -l") {|p|
+  if p.gets.to_i > 0
+    require 'omf-resctl/omf_driver/atherosUSB'
+    MObject.info "Have Atheros USB card"
+    AgentCommands::DEV_MAPPINGS['net/w0'] = AtherosDevice.new('net/w0', 'wlan0')
+  end
+}
+
 #
 # Execution Entry point 
 #

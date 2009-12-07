@@ -17,7 +17,7 @@ common:
 	cd omf-common && debuild -i -us -uc -b
 
 resctl:
-	cd omf-common && debuild -i -us -uc -b
+	cd omf-resctl && debuild -i -us -uc -b
 
 .PHONY: clean
 

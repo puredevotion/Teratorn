@@ -1,7 +1,7 @@
 # $Id: interface_types.rb,v 1.6 2004/02/21 07:44:59 daniel Exp $
 #
 
-require 'lib/ifconfig/common/interface_types'
+require 'omf-common/ifconfig/common/interface_types'
 
 class NetworkAdapter
   # Parse activity on interface

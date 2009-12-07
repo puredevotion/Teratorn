@@ -61,17 +61,17 @@ sub diffFiles {
     my @lines = `diff -qr $orig $new`;
     foreach my $line (@lines) {
 	chomp $line;
-	next if( $line !~ /^Files/ );
+        if( $line =~ /^Files/ ) {
+	    # line = "Files ... and ... differ"
+	    my @fields = split(/ /, $line);
 
-	# line = "Files ... and ... differ"
-	my @fields = split(/ /, $line);
+	    next if( @fields != 5 );
 
-	next if( @fields != 5 );
+	    my $dest = $fields[1];
+	    my $src = $fields[3];
 
-	my $dest = $fields[1];
-	my $src = $fields[3];
-
-	$ret{$src} = $dest;
+	    $ret{$src} = $dest;
+	}
     }
 
     return \%ret;
