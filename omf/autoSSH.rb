@@ -1,7 +1,7 @@
 require 'net/ssh'
 
 begin
-    Net::SSH.start("wireless-gw.cs.wisc.edu", "mcnulty", "", :auth_methods => [ "password" ] ) do |ssh|
+    Net::SSH.start("wireless-gw.cs.wisc.edu", "user", "password", :auth_methods => [ "password" ] ) do |ssh|
 	puts "Connection opened"
 	channel = ssh.open_channel do |ch|
 	    ch.on_data do |c, data|
@@ -14,15 +14,6 @@ begin
 	if( channel == nil ) 
 	    puts "Failed to open channel"
 	    exit 1
-	end
-
-	channel.request_pty do |ch, success| 
-	    if success
-		puts "pty obtained"
-	    else
-		puts "failed to obtain pty"
-		exit 1
-	    end
 	end
 
 	puts "Connection looped"
