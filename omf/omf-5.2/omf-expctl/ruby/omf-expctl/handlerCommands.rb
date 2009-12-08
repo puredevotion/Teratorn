@@ -464,6 +464,21 @@ def everyNS(nodesSelector, interval = 60, &block)
 end
 
 #
+# Return the control IP of the node at the specified coordinates
+#
+# Used to be able to support nodes with DHCP control IPs
+#
+# - x = x coordinate of node
+# - y = y coordinate of node
+#
+# [Return] a string representation of the IP
+#
+def getControlIP(x, y)
+    node = Node.at!(x, y)
+    return node.getControlIP()
+end
+
+#
 # Return the appropriate antenna (set)
 #
 # - x = x coordinate of the antenna 
