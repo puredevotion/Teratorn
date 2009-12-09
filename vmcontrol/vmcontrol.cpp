@@ -107,7 +107,7 @@ static const char *USAGE =
 " [-n] [-c full_path_config] [-H hostname] [-p port] [-r] -U user -l limit <-u|-d> <vmpath>";
 static const char *OPT_STR = "H:udU:l:nrp:c:";
 static const char *DEFAULT_HOST = "https://127.0.0.1:8333/sdk";
-static const char *DEFAULT_PORT = "8334";
+static const char *DEFAULT_PORT = "8400";
 static const int CHECK_VM_PERIOD = 2*60; // seconds
 static const int LOWEST_PRIO = 19;
 static const char *DEFAULT_CONFIG = "/etc/vmware/vmcontrol/config";

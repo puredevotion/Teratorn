@@ -23,7 +23,7 @@ my $dbconn = DBI->connect("dbi:SQLite:dbname=$DBNAME", "", "")
     or die("Could not connect to database: $!\n");
 
 # Create the select columns string
-my $columns = join(",", @ARGV);
+my $columns = join(",", @ARGV[0,@ARGV]);
 $columns =~ s/,\s*$//g;
 
 my $statement = "SELECT $columns FROM $TABLE";
