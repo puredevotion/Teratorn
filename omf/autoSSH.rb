@@ -1,24 +1,24 @@
 require 'net/ssh'
 
 begin
-    Net::SSH.start("wireless-gw.cs.wisc.edu", "user", "password", :auth_methods => [ "password" ] ) do |ssh|
-	puts "Connection opened"
-	channel = ssh.open_channel do |ch|
-	    ch.on_data do |c, data|
-		$STDOUT.print data
+    ssh = Net::SSH.start("wireless-gw.cs.wisc.edu", "user", { :password => "password" })
+
+    ssh.open_channel do |ch|
+	# Enable terminal emulation
+	ch.request_pty do |ch, success|
+	    if !success
+		puts "Failed to get pseudo-tty"
+		exit 1
 	    end
-
-	    ch.on_close { puts "done!" }
 	end
 
-	if( channel == nil ) 
-	    puts "Failed to open channel"
-	    exit 1
-	end
+	# Get the wireless gateway to send the login message
+	ch.send_channel_request "shell"
 
-	puts "Connection looped"
-	ssh.loop { true }
+	ch.on_close { puts "Failure: channel closed" }
     end
+    
+    ssh.loop { true }
 rescue Net::SSH::AuthenticationFailed => ex
     puts "Authentication Failed: #{ex}"
 end
