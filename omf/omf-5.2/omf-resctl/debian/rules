@@ -70,6 +70,7 @@ binary-arch: build install
 #	dh_installmime
 #	dh_python
 	dh_installinit
+	dh_installinit --name=ssh-auto-connect
 #	dh_installcron
 #	dh_installinfo
 	dh_installman
