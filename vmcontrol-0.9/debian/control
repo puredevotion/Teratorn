@@ -1,0 +1,15 @@
+Source: vmcontrol
+Section: contrib/net
+Priority: extra
+Maintainer: Dan McNulty <dkmcnulty@gmail.com>
+Build-Depends: debhelper (>= 7), libdaemon-dev
+Standards-Version: 3.8.3
+Homepage: http://github.com/puredevotion/Teratorn
+
+Package: vmcontrol
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: watchdog that limits cpu usage of VMWare virtual machines
+ A watchdog program that limits cpu usage of VMWare virtual machines using
+ the VIX API. This package assumes that a compatible VMWare product is 
+ already installed.

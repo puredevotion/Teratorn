@@ -1,0 +1,17 @@
+This work was packaged for Debian by:
+
+    Dan McNulty <dkmcnulty@gmail.com> on Wed, 09 Dec 2009 22:48:35 -0600
+
+It was downloaded from http://github.com/puredevotion/Teratorn
+
+Copyright:
+
+    <Copyright (C) 2009 Dan McNulty>
+
+License:
+
+    vmcontrol is licensed under the LGPL version 3.   
+
+The Debian packaging is:
+
+    Copyright (C) 2009 Dan McNulty <dkmcnulty@gmail.com> and is licensed under the GPL version 3, see `/usr/share/common-licenses/GPL-3'.

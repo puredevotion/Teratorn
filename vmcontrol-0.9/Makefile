@@ -2,7 +2,16 @@
 # Makefile for the project
 #
 
-binaries = vmcontrol
+binary = vmcontrol
+
+# Install variables
+BIN = $(DESTDIR)/usr/sbin
+CONFIG = $(DESTDIR)/etc/vmware/vmcontrol
+
+VERSION = 0.9
+
+DIST = vmcontrol-$(VERSION).tar
+DISTGZ = $(DIST).gz
 
 CC = gcc
 CC_ARGS = -Wall -pedantic -g -std=c99
@@ -17,7 +26,7 @@ CPULIMIT_LINK = -lrt
 
 DAEMON_LINK = -ldaemon
 
-all: $(binaries)
+all: $(binary)
 
 vmcontrol: vmcontrol.o cpulimit.o vixint.o util.o 
 	$(CPP) $(CPP_ARGS) -o vmcontrol vmcontrol.o cpulimit.o vixint.o util.o $(VIX_LINK) $(CPULIMIT_LINK) $(DAEMON_LINK)
@@ -40,7 +49,17 @@ parse: parse.cpp
 .PHONY: clean test-up test
 
 clean: 
-	rm -f *.o *.ls *.hex *.class $(binaries)
+	rm -f *.o *.ls *.hex *.class $(binary)
+
+install: all
+	install -d $(BIN) $(CONFIG)
+	install ./vmcontrol $(BIN)
+	install -m640 ./config $(CONFIG)
 
 test: vmcontrol
 	sudo ./vmcontrol -n -u
+
+dist:
+	-cd .. && rm -f $(DISTGZ)
+	cd .. && tar cvf $(DIST) vmcontrol-$(VERSION)/
+	cd .. && gzip $(DIST)

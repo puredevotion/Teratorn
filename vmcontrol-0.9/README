@@ -1,0 +1,100 @@
+This folder contains the source for the vmcontrol
+=================================================
+
+The goal of the vmcontrol program is to perform the duties of a watchdog for a
+virtual machine. 
+
+The code is written in a mixture of C/C++, and it utilizes the VIX API to
+interact with VMWare Server 2.0 and the cpulimit code base to limit the cpu
+usage of the virtual machine.
+
+The vmcontrol binary can be built and installed by issuing:
+make && make DESTDIR=<prefix> install
+
+or you can build a Debian package with:
+
+dpkg-buildpackage -rfakeroot
+
+This command will dump the .deb in the parent directory.
+
+Algorithm
+=========
+
+The general algorithm for the program is:
+
+1. Login to the VMWare host interface using the VIX API and the user supplied
+credentials.  
+
+a. The credentials can be supplied on the command line or via a config file
+
+2. The user specifies the path to the virtual machine in a standard VMWare
+format via the command line or a config file 
+    
+a. The path to the virtual machine is the path to the .vmx config file and
+includes the datastore identifier and the path relative to the location of
+the datastore. For example, let's say the virtual machine resides at the path
+'/usr/lib/vmware/vms/emdebian/emdebian.vmx' and the [standard] datastore
+resides at the path '/usr/lib/vmware/vms'. Then, the path passed to vmcontrol
+should be 'emdebian/emdebian.vmx'.
+
+3. The user also specifies the % of CPU usage that the virtual machine should
+be allowed, either via the command line or via a config file. This limit is
+an integer.
+
+4. If the user specifies that the virtual machine should be turned off, skip
+to step TODO. Otherwise, continue to the next step.
+
+5. If the vmcontrol daemon is not already running, the daemon is started. The
+program then attempts to turn on the virtual machine using the VIX API. If the
+associated processes needed to run a virtual machine (such as vmware-hostd) are
+not running, vmcontrol will start them. Once these processes are started, they
+are all 'niced' to reduce the priority of the associated VMWare processes. Once
+the virtual machine is ready, a child process is spawned to apply the cpulimit
+cpu usage limiter algorithm. A UNIX pipe is established between this child
+process and the daemon process for communication and error handling. Next, a
+socket is created to listen for commands on the loopback interface. (Note: the
+socket interface should only listen on the loopback interface as the SSL is
+currently not used. ) Finally, at a predetermined frequency, the daemon ensures
+that the virtual machine is still running and restarts it if necessary. A
+diagram of the daemon's communication setup:
+
+    +----------+    pipe    +--------+    socket   |
+    | cpulimit | <--------> | daemon | <---------> | network
+    +----------+            +--------+             |
+
+Description of files
+====================
+
+README, Makefile, COPYING
+Standard files
+
+cpulimit.*
+The cpulimit code base, included from code released at
+http://cpulimit.sourceforge.net/. Minor changes were made to be able to use
+this code base as a library.
+
+util.*
+These files provide some utility functionality that isn't necessarily specific
+to vmcontrol functionality.
+
+vixint.*
+These files provide some wrappers around calls to the VIX API.
+
+vmcontrol.*
+The entry point for the program. Parses arguments and the config file, sets up
+and handles IPC, daemonizes the program.
+
+topall.pl
+A Perl script that runs the top utility with the PIDs of all the important 
+processes one might care about when using vmcontrol.
+
+workload.pl
+A Perl script used to provide a kernel-compiling workload. This script was
+used to estimate the worst-case impact of the virtual machine on the 
+performance of the host.
+
+config
+The default config, installed by the Debian package.
+
+debian/
+Used in building the Debian package

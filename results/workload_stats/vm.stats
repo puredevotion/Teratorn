@@ -1,0 +1,9 @@
+!!! Iteration 1: 5702 seconds
+!!! Iteration 0: 5849 seconds
+!!! Iteration 1: 5751 seconds
+!!! Iteration 1: 5851 seconds
+!!! Iteration 2: 5657 seconds
+Average: 5762 seconds
+(5762 - 5502.4) / 5502.4 * 100 = 4.717941262 % increase
+
+Variance: 7559
