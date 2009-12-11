@@ -7,7 +7,7 @@
 # Default-Stop:      0 1 6
 # Short-Description: Watchdog for virtual machines
 # Description:       A watchdog for virtual machines that 
-                     limits CPU usage
+#                     limits CPU usage
 ### END INIT INFO
 
 # Author: Dan McNulty <dkmcnulty@gmail.com>
