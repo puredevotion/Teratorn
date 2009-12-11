@@ -1,0 +1,3566 @@
+diff -Nur omf-5.2.clean/external/coderay-0.8.3/debian/control omf-5.2/external/coderay-0.8.3/debian/control
+--- omf-5.2.clean/external/coderay-0.8.3/debian/control	2009-11-04 00:45:35.000000000 -0600
++++ omf-5.2/external/coderay-0.8.3/debian/control	2009-04-17 06:33:09.000000000 -0500
+@@ -7,7 +7,7 @@
+ 
+ Package: libcoderay-ruby1.8
+ Section: omf
+-Architecture: all
++Architecture: any
+ Depends: ${shlibs:Depends}, ${misc:Depends}, libruby1.8
+ Description: fast syntax highlighter for Ruby
+  CodeRay is fast syntax highlighter for Ruby, HTML, JavaScript, CSS, C, YAML, and other languages. It produces colorful, valid XHTML.
+diff -Nur omf-5.2.clean/external/frisbee/frisbee/debian/control omf-5.2/external/frisbee/frisbee/debian/control
+--- omf-5.2.clean/external/frisbee/frisbee/debian/control	2009-11-04 00:45:35.000000000 -0600
++++ omf-5.2/external/frisbee/frisbee/debian/control	2009-09-10 23:26:31.000000000 -0500
+@@ -6,7 +6,7 @@
+ Standards-Version: 3.7.2
+ 
+ Package: frisbee
+-Architecture: any
++Architecture: i386
+ Depends: ${shlibs:Depends}, ${misc:Depends}, zlib1g
+ Description: multicast file distribution tool
+  multicast file distribution tool from EMULAB
+diff -Nur omf-5.2.clean/external/frisbee/imagezip/debian/control omf-5.2/external/frisbee/imagezip/debian/control
+--- omf-5.2.clean/external/frisbee/imagezip/debian/control	2009-11-04 00:45:35.000000000 -0600
++++ omf-5.2/external/frisbee/imagezip/debian/control	2009-09-10 23:26:31.000000000 -0500
+@@ -6,7 +6,7 @@
+ Standards-Version: 3.7.2
+ 
+ Package: imagezip
+-Architecture: any
++Architecture: i386
+ Depends: libssl0.9.8
+ Description: filesystem image compression tool
+  filesystem image compression tool from EMULAB
+diff -Nur omf-5.2.clean/install.pl omf-5.2/install.pl
+--- omf-5.2.clean/install.pl	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/install.pl	2009-11-28 18:00:23.000000000 -0600
+@@ -0,0 +1,78 @@
++#!/usr/bin/perl
++#
++# A perl script used to ease development testing
++#
++
++use strict;
++use warnings;
++
++my $OMF_HOST_ROOT = "/usr/lib/ruby/1.8";
++my $OMF_DEV_ROOT = "ruby";
++
++my $AGG = "omf-aggmgr";
++my $COMM = "omf-common";
++my $EXP = "omf-expctl";
++
++my $USAGE = <<USAGE;
++Usage: $0 <$AGG|$COMM|$EXP> [test]
++USAGE
++
++die($USAGE) if( @ARGV < 1 || @ARGV > 2 );
++
++my $PKG = $ARGV[0];
++
++if( $PKG !~ /^($AGG|$COMM|$EXP)$/ ) {
++    die($USAGE);
++}
++
++my $TEST = 0;
++if( @ARGV == 2 ) {
++    $TEST = 1;
++    print "TESTING---NOT COPYING\n";
++}
++
++# Special case for expctl
++my %files = ();
++if( $PKG eq $EXP ) {
++    my $hash_ref = &diffFiles("$OMF_HOST_ROOT/$EXP.rb",
++	"$EXP/$OMF_DEV_ROOT/$EXP.rb");
++    %files = %{ $hash_ref };
++}
++
++my $tmp_ref = &diffFiles("$OMF_HOST_ROOT/$PKG/",
++ "$PKG/$OMF_DEV_ROOT/$PKG/");
++
++foreach my $key (keys %{ $tmp_ref } ) {
++    print "sudo cp -f $key $tmp_ref->{$key}\n";
++    if( !$TEST ) {
++	print `sudo cp -f $key $tmp_ref->{$key}`;
++    }
++}
++
++print "!!! Remember to restart omf-aggmgr (/etc/init.d/omf-aggmgr restart)\n";
++
++sub diffFiles {
++    my $orig = $_[0];
++    my $new = $_[1];
++
++    my %ret = ();
++
++    print "diff -qr $orig $new\n";
++    my @lines = `diff -qr $orig $new`;
++    foreach my $line (@lines) {
++	chomp $line;
++        if( $line =~ /^Files/ ) {
++	    # line = "Files ... and ... differ"
++	    my @fields = split(/ /, $line);
++
++	    next if( @fields != 5 );
++
++	    my $dest = $fields[1];
++	    my $src = $fields[3];
++
++	    $ret{$src} = $dest;
++	}
++    }
++
++    return \%ret;
++}
+diff -Nur omf-5.2.clean/Makefile omf-5.2/Makefile
+--- omf-5.2.clean/Makefile	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/Makefile	2009-12-10 20:39:12.000000000 -0600
+@@ -0,0 +1,29 @@
++
++#
++# A Makefile to build the debian packages
++#
++
++default:
++
++debs: aggmgr expctl common resctl
++
++aggmgr:
++	cd omf-aggmgr && debuild -i -us -uc -b
++
++expctl:
++	cd omf-expctl && debuild -i -us -uc -b
++
++common:
++	cd omf-common && debuild -i -us -uc -b
++
++resctl:
++	cd omf-resctl && debuild -i -us -uc -b
++
++.PHONY: clean
++
++clean:
++	rm -f *.deb *.build *.changes
++	cd omf-resctl && dh_clean
++	cd omf-expctl && dh_clean
++	cd omf-aggmgr && dh_clean
++	cd omf-common && dh_clean
+diff -Nur omf-5.2.clean/omf-aggmgr/debian/changelog omf-5.2/omf-aggmgr/debian/changelog
+--- omf-5.2.clean/omf-aggmgr/debian/changelog	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/debian/changelog	2009-10-16 04:52:18.000000000 -0500
+@@ -1,5 +1,44 @@
+-omf-aggmgr-5.2 (1) stable; urgency=low
++omf-aggmgr (5.2-1) stable; urgency=low
+ 
+-  * Initial release.
++  * first OMF 5.2 release package
++  * added saveimage gridservice
++  * now checks if a port is free before trying to bind it
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 16 Oct 2009 20:26:14 +1100
++
++omf-aggmgr (5.0-4) stable; urgency=low
++
++  * fixed omf tell
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Thu, 17 Sep 2009 13:41:33 +1000
++
++omf-aggmgr (5.0-3) stable; urgency=low
++
++  * fixed logrotation
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Tue, 15 Sep 2009 16:36:06 +1000
++
++omf-aggmgr (5.0-2) stable; urgency=low
++
++  * changed distribution to stable
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Mon, 07 Sep 2009 14:19:10 +1000
++
++omf-aggmgr (5.0-1ubuntu2) hardy; urgency=low
++
++  * removed oml2-server gridservice, now using SSH/Telnet only to reboot nodes
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Mon, 03 Aug 2009 14:24:06 +1000
++
++omf-aggmgr (5.0-1ubuntu1) hardy; urgency=low
++
++  * improved startup script, fixed module locations, renamed logfile
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Tue, 19 May 2009 19:39:37 +1000
++
++omf-aggmgr (5.0-1) testing; urgency=low
++
++  * Initial release
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 17 Apr 2009 17:23:28 +1000
+ 
+- -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 06 Nov 2009 12:59:14 +1100
+diff -Nur omf-5.2.clean/omf-aggmgr/debian/control omf-5.2/omf-aggmgr/debian/control
+--- omf-5.2.clean/omf-aggmgr/debian/control	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/debian/control	2009-09-16 22:42:43.000000000 -0500
+@@ -1,12 +1,12 @@
+-Source: omf-aggmgr-5.2
++Source: omf-aggmgr
+ Section: omf
+ Priority: extra
+ Maintainer: Christoph Dwertmann <christoph.dwertmann@nicta.com.au>
+ Build-Depends: debhelper (>= 5)
+ Standards-Version: 3.7.2
+ 
+-Package: omf-aggmgr-5.2
+-Architecture: all
+-Depends: frisbee, libmysql-ruby, libldap-ruby1.8 (>=0.9.0-1), libsqlite3-ruby, omf-common-5.2, psmisc, nmap
++Package: omf-aggmgr
++Architecture: any
++Depends: frisbee, libmysql-ruby, libldap-ruby1.8 (>=0.9.0-1), libsqlite3-ruby, omf-common, mysql-server, psmisc, nmap
+ Description: OMF Aggregate Manager
+  Provides various services for running experiments in OMF
+diff -Nur omf-5.2.clean/omf-aggmgr/debian/dirs omf-5.2/omf-aggmgr/debian/dirs
+--- omf-5.2.clean/omf-aggmgr/debian/dirs	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/debian/dirs	2009-04-23 03:20:34.000000000 -0500
+@@ -1,3 +1,3 @@
+-usr/share
++usr/lib/ruby/1.8
+ etc
+ usr/sbin
+diff -Nur omf-5.2.clean/omf-aggmgr/debian/init.d omf-5.2/omf-aggmgr/debian/init.d
+--- omf-5.2.clean/omf-aggmgr/debian/init.d	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/debian/init.d	2009-09-02 03:42:04.000000000 -0500
+@@ -15,7 +15,7 @@
+ # Description:       Enable service provided by daemon.
+ ### END INIT INFO
+ 
+-NAME=omf-aggmgr-5.2
++NAME=omf-aggmgr
+ 
+ test -x /usr/sbin/$NAME || exit 0
+ 
+diff -Nur omf-5.2.clean/omf-aggmgr/debian/omf-aggmgr-5.2.logrotate omf-5.2/omf-aggmgr/debian/omf-aggmgr-5.2.logrotate
+--- omf-5.2.clean/omf-aggmgr/debian/omf-aggmgr-5.2.logrotate	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/debian/omf-aggmgr-5.2.logrotate	1969-12-31 18:00:00.000000000 -0600
+@@ -1,9 +0,0 @@
+-/var/log/omf-aggmgr-5.2.log {
+-	weekly
+-	rotate 4
+-	missingok
+-	notifempty
+-	compress
+-	copytruncate
+-}
+-
+diff -Nur omf-5.2.clean/omf-aggmgr/debian/omf-aggmgr-5.2.postinst omf-5.2/omf-aggmgr/debian/omf-aggmgr-5.2.postinst
+--- omf-5.2.clean/omf-aggmgr/debian/omf-aggmgr-5.2.postinst	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/debian/omf-aggmgr-5.2.postinst	1969-12-31 18:00:00.000000000 -0600
+@@ -1,42 +0,0 @@
+-#! /bin/sh
+-#
+-# see: dh_installdeb(1)
+-
+-set -e
+-
+-# summary of how this script can be called:
+-#        * <postinst> configure' <most-recently-configured-version>
+-#        * <old-postinst> abort-upgrade' <new version>
+-#        * <conflictor's-postinst> abort-remove' in-favour' <package>
+-#          <new-version>
+-#        * <deconfigured's-postinst> abort-deconfigure' in-favour'
+-#          <failed-install-package> <version> removing'
+-#          <conflicting-package> <version>
+-# for details, see http://www.debian.org/doc/debian-policy/ or
+-# the debian-policy package
+-#
+-
+-case "$1" in
+-    install|configure)
+-    
+-    #
+-    # Source debconf library
+-    #
+-    . /usr/share/debconf/confmodule
+-    mkdir -p -m 777 /var/lib/omf-images-5.2
+-    ;;
+-    
+-    abort-upgrade|abort-remove|abort-deconfigure)	    
+-    ;;		
+-    
+-    *)
+-    echo "postinst called with unknown argument \$1'" >&2
+-    exit 1
+-    ;;
+-esac
+-					
+-# dh_installdeb will replace this with shell code automatically
+-# generated by other debhelper scripts.
+-					
+-#DEBHELPER#
+-exit 0
+diff -Nur omf-5.2.clean/omf-aggmgr/debian/omf-aggmgr.logrotate omf-5.2/omf-aggmgr/debian/omf-aggmgr.logrotate
+--- omf-5.2.clean/omf-aggmgr/debian/omf-aggmgr.logrotate	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-aggmgr/debian/omf-aggmgr.logrotate	2009-09-14 02:45:05.000000000 -0500
+@@ -0,0 +1,9 @@
++/var/log/omf-aggmgr.log {
++	weekly
++	rotate 4
++	missingok
++	notifempty
++	compress
++	copytruncate
++}
++
+diff -Nur omf-5.2.clean/omf-aggmgr/debian/omf-aggmgr.postinst omf-5.2/omf-aggmgr/debian/omf-aggmgr.postinst
+--- omf-5.2.clean/omf-aggmgr/debian/omf-aggmgr.postinst	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-aggmgr/debian/omf-aggmgr.postinst	2009-10-16 04:52:18.000000000 -0500
+@@ -0,0 +1,42 @@
++#! /bin/sh
++#
++# see: dh_installdeb(1)
++
++set -e
++
++# summary of how this script can be called:
++#        * <postinst> configure' <most-recently-configured-version>
++#        * <old-postinst> abort-upgrade' <new version>
++#        * <conflictor's-postinst> abort-remove' in-favour' <package>
++#          <new-version>
++#        * <deconfigured's-postinst> abort-deconfigure' in-favour'
++#          <failed-install-package> <version> removing'
++#          <conflicting-package> <version>
++# for details, see http://www.debian.org/doc/debian-policy/ or
++# the debian-policy package
++#
++
++case "$1" in
++    install|configure)
++    
++    #
++    # Source debconf library
++    #
++    . /usr/share/debconf/confmodule
++    mkdir -p -m 777 /var/lib/omf-images  
++    ;;
++    
++    abort-upgrade|abort-remove|abort-deconfigure)	    
++    ;;		
++    
++    *)
++    echo "postinst called with unknown argument \$1'" >&2
++    exit 1
++    ;;
++esac
++					
++# dh_installdeb will replace this with shell code automatically
++# generated by other debhelper scripts.
++					
++#DEBHELPER#
++exit 0
+diff -Nur omf-5.2.clean/omf-aggmgr/debian/rules omf-5.2/omf-aggmgr/debian/rules
+--- omf-5.2.clean/omf-aggmgr/debian/rules	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-aggmgr/debian/rules	2009-09-17 01:43:07.000000000 -0500
+@@ -9,8 +9,8 @@
+ # Uncomment this to turn on verbose mode.
+ #export DH_VERBOSE=1
+ 
+-VERSION=5.2
+-PKG_NAME=omf-aggmgr-$(VERSION)
++
++
+ 
+ configure: configure-stamp
+ configure-stamp:
+@@ -43,18 +43,13 @@
+ 	dh_testroot
+ 	dh_clean -k 
+ 	dh_installdirs
++
++	# Add here commands to install the package into debian/omf-aggmgr.
++	tar -C ruby -cf - --exclude='.svn' omf-aggmgr | tar -xf - -C debian/omf-aggmgr/usr/lib/ruby/1.8/
++	svn info | grep Revision | cut -d ' ' -f 2 > debian/omf-aggmgr/usr/lib/ruby/1.8/omf-aggmgr/REVISION
++	tar -C etc -cf - --exclude='.svn' omf-aggmgr | tar -xf - -C debian/omf-aggmgr/etc/
++	tar -cf - --exclude='.svn' sbin | tar -xf - -C debian/omf-aggmgr/usr
+ 	
+-	# Add here commands to install the package into debian/.
+-	mkdir -p debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
+-	tar -C ruby -cf - --exclude='.svn' omf-aggmgr | tar -xf - -C debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
+-	svn info | grep Revision | cut -d ' ' -f 2 > debian/$(PKG_NAME)/usr/share/$(PKG_NAME)/omf-aggmgr/REVISION
+-	tar -C etc -cf - --exclude='.svn' omf-aggmgr | tar -xf - -C debian/$(PKG_NAME)/etc/
+-	tar -cf - --exclude='.svn' sbin | tar -xf - -C debian/$(PKG_NAME)/usr
+-	
+-	mv debian/$(PKG_NAME)/etc/omf-aggmgr debian/$(PKG_NAME)/etc/$(PKG_NAME)
+-	mv debian/$(PKG_NAME)/usr/sbin/omf-aggmgr debian/$(PKG_NAME)/usr/sbin/$(PKG_NAME)
+-	mv debian/$(PKG_NAME)/usr/sbin/omf_create_sysnode debian/$(PKG_NAME)/usr/sbin/omf_create_sysnode-$(VERSION)
+-		
+ # Build architecture-independent files here.
+ binary-indep: build install
+ # We have nothing to do by default.
+diff -Nur omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/cmcStub.yaml omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/cmcStub.yaml
+--- omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/cmcStub.yaml	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/cmcStub.yaml	2009-04-17 01:51:17.000000000 -0500
+@@ -10,4 +10,4 @@
+     default: 
+ 
+       # inventory_url: URL to the Inventory GS, where we can get mapping [x,y] to IP@
+-      inventory_url: 'http://localhost:5052/inventory'
++      inventory_url: 'http://localhost:5022/inventory'
+diff -Nur omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/frisbee.yaml.nicta omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/frisbee.yaml.nicta
+--- omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/frisbee.yaml.nicta	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/frisbee.yaml.nicta	2009-10-20 06:06:08.000000000 -0500
+@@ -12,7 +12,7 @@
+   testbed:
+     default:
+       # Directory images are stored
+-      imageDir: /var/lib/omf-images-5.2
++      imageDir: /var/lib/omf-images
+       #defaultImage: orbit-baseline
+       defaultImage: norbix
+ 
+diff -Nur omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/inventory.yaml.wisc omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/inventory.yaml.wisc
+--- omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/inventory.yaml.wisc	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/inventory.yaml.wisc	2009-12-05 22:54:35.000000000 -0600
+@@ -0,0 +1,25 @@
++# NOTE: use only 'spaces' to indent !
++# ('tab' indents are not supported by the ruby yaml parser used to read this file)
++#
++# This is the Config file for the Inventory GridService on the NICTA platform
++#
++---
++inventory:
++
++  testbed:
++    default:
++      # Name of the Database Server
++      host: localhost
++      # Username and password to access the database server
++      user: omf
++      password: omf
++      # Name of the database to use
++      database: inventory
++      # IP/Hostname of the XMPP server
++      xmpp_server: 192.168.3.1
++      # The discovery user -- listens for new DISCOVER messages from nodes
++      discover_user: discoverd
++      # The password for the user
++      discover_pass: 123
++      # The already created Pub/Sub node used for discovery
++      discover_pubsub_node: discoverd
+diff -Nur omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.nicta omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.nicta
+--- omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.nicta	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.nicta	2009-04-17 01:51:17.000000000 -0500
+@@ -21,4 +21,4 @@
+   #
+   testbed:
+     default: 
+-      inventory_url: 'http://localhost:5052/inventory'
++      inventory_url: 'http://localhost:5022/inventory'
+diff -Nur omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.winlab omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.winlab
+--- omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.winlab	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/pxe.yaml.winlab	2009-04-17 01:51:17.000000000 -0500
+@@ -21,4 +21,4 @@
+   #
+   testbed:
+     default: 
+-      inventory_url: 'http://internal1.orbit-lab.org:5052/inventory'
++      inventory_url: 'http://internal1.orbit-lab.org:5022/inventory'
+diff -Nur omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/saveimage.yaml omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/saveimage.yaml
+--- omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/available/saveimage.yaml	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/etc/omf-aggmgr/available/saveimage.yaml	2009-10-19 03:18:39.000000000 -0500
+@@ -24,7 +24,7 @@
+       owner: nobody
+ 
+       # Directory where images are saved to
+-      imageDir: /var/lib/omf-images-5.2
++      imageDir: /var/lib/omf-images
+       
+       # Local interface to bind to for netcat
+       saveimageIF: 10.0.0.200
+diff -Nur omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/def_gridservices_log.xml omf-5.2/omf-aggmgr/etc/omf-aggmgr/def_gridservices_log.xml
+--- omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/def_gridservices_log.xml	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/etc/omf-aggmgr/def_gridservices_log.xml	2009-05-19 04:40:49.000000000 -0500
+@@ -1,7 +1,7 @@
+ <log4r_config>
+   <pre_config>
+     <global level="DEBUG"/>
+-    <parameter name="serverlog" value="/var/log/omf-aggmgr-5.2.log"/>
++    <parameter name="serverlog" value="/var/log/omf-aggmgr.log"/>
+   </pre_config>
+   <!-- outputers -->
+   <outputter type="FileOutputter" name="log" level="DEBUG">
+diff -Nur omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/gridservices.cfg omf-5.2/omf-aggmgr/etc/omf-aggmgr/gridservices.cfg
+--- omf-5.2.clean/omf-aggmgr/etc/omf-aggmgr/gridservices.cfg	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-aggmgr/etc/omf-aggmgr/gridservices.cfg	2009-04-23 03:20:34.000000000 -0500
+@@ -1,10 +1,11 @@
+-# - Currently no YAML config file supported
+-#   This hack passes config parameters to the gridService daemon
+-# - Supported parameters:
+-#   --config FILE       File containing general configuration files
+-#   --dir DIRECTORY     Directory containing gridservices definitions
+-#   --port PORT_NO      Port to start web server on
+-#   --services a,b      Services to load 
+-OPTS="--port 5052"
+-#  File containing logging configuration information
+-GRID_SERVICES_LOG=/etc/omf-aggmgr-5.2/def_gridservices_log.xml
++# Thierry:
++# - Currently no YAML config file supported
++#   This hack passes config parameters to the gridService daemon
++# - Supported parameters:
++#   --config FILE       File containing general configuration files
++#   --dir DIRECTORY     Directory containing gridservices definitions
++#   --port PORT_NO      Port to start web server on
++#   --services a,b      Services to load 
++OPTS="--port 5022"
++#  File containing logging configuration information   
++GRID_SERVICES_LOG=/etc/omf-aggmgr/def_gridservices_log.xml
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/listPubSubNodes.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/listPubSubNodes.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/listPubSubNodes.rb	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/listPubSubNodes.rb	2009-12-05 13:09:22.000000000 -0600
+@@ -0,0 +1,38 @@
++#
++# = listPubSubNodes.rb
++#
++# Connects to a XMPP server and lists all the available Pub/Sub nodes
++#
++
++require 'omf-common/omfPubSubService'
++require 'xmpp4r/pubsub/helper/nodebrowser'
++
++USAGE = <<USAGE
++USAGE: #{$0} xmppIP
++USAGE
++
++begin
++    if (ARGV.size == 0) 
++	puts USAGE
++	exit 1
++    end
++
++    xmppIP = ARGV[0]
++    userJID = "discoverd@#{xmppIP}"
++    password = "123"
++
++    clientHelper = Jabber::Client.new(userJID)
++    clientHelper.connect(xmppIP)
++    clientHelper.auth(password)
++    clientHelper.send(Jabber::Presence.new)
++
++    nb = Jabber::PubSub::NodeBrowser.new(clientHelper)
++
++    domainjid = Jabber::JID.new(nil, "pubsub.#{xmppIP}")
++
++    nodes = nb.nodes(domainjid)
++
++    for name in nodes do
++	puts "Node: #{name}"
++    end
++end
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs/gridService.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs/gridService.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs/gridService.rb	2009-11-04 19:34:42.000000000 -0600
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs/gridService.rb	2009-08-03 00:18:31.000000000 -0500
+@@ -75,7 +75,7 @@
+   end
+ 
+   #
+-  # Make this Service return a 'resXml' as a 'text/xml'
++  # Make this Service to return 'resXml' as 'text/xml'
+   #
+   # - res = the HTTP Response message to update
+   # - resXML =  the resXML to turn into text/XML
+@@ -89,17 +89,6 @@
+   end
+ 
+   #
+-  # Make this Service return a plain text as a 'text/plain'
+-  #
+-  # - res = the HTTP Response message to update
+-  # - resXML =  the plain text to return
+-  #
+-  def self.setResponsePlainText(res, resTxt)
+-    res.body = resTxt
+-    res['Content-Type'] = "text/plain"
+-  end
+-  
+-  #
+   # Parse a given parameter inside a HTTP request (sent to this Service) into
+   # a Node Set declaration, which is an array of Node Sets. If this parameter is 
+   # not present in the request, then parse the 'default' argument instead.
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_cmc/cmc.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_cmc/cmc.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_cmc/cmc.rb	2009-12-07 03:28:49.000000000 -0600
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_cmc/cmc.rb	2009-05-19 04:38:56.000000000 -0500
+@@ -132,6 +132,9 @@
+   #
+   def self.configure(config)
+     @@config = config
++    #error("Missing configuration 'cfgDir'") if @@config['cfgDir'] == nil
++    ## this needs more work!
++    $PrimaryInterface = ::CMC::Testbed.loadConfig("/etc/omf-aggmgr/available/cmc.yaml")
+   end
+   
+   def self.authorizeIP(req, res)
+@@ -143,7 +146,7 @@
+    # We have to make sure that either the domain of the peer address
+    # maches the requested testbed or that the address  
+    # belongs to the set/range of addresses authorized to access nodes
+-   puts "Checking authorization for domain #{domain}' req=#{peerDomain}, peerIP=#{peerIp}"
++   puts "Checking authorization for domain #{domain}' req=#{peerDomain}, peerIP=#{peerIP}"
+    # We need to do parial match on subdomain and handle default as well ...
+    isAuth = (domain == peerDomain)
+    isAuth
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_cmcStub/cmcStub.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_cmcStub/cmcStub.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_cmcStub/cmcStub.rb	2009-09-15 23:13:03.000000000 -0500
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_cmcStub/cmcStub.rb	2009-11-05 23:15:18.000000000 -0600
+@@ -89,10 +89,6 @@
+   s_param :y, 'ycoord', 'y coordinates of location'
+   s_param :domain, 'domain', 'domain for request.'
+   service 'reset' do |req, res|
+-    x = getParam(req, 'x')
+-    y = getParam(req, 'y')
+-    domain = getParam(req, 'domain')
+-    reboot(x,y,domain,req)
+     self.responseOK(res)
+   end
+ 
+@@ -100,38 +96,22 @@
+   # Implement 'offHard' service using the 'service' method of AbstractService
+   # In this Stub CMC, this will always return HTTP OK
+   # 
+-  # NOTE: 
+-  # At NICTA, we do not have the CM card operational on our nodes yet...
+-  # We use the NA's 'REBOOT' command to implement a 'offHard'
+-  #
+   s_info 'Switch off a node HARD (immediately) at a specific coordinate'
+   s_param :x, 'xcoord', 'x coordinates of location'
+   s_param :y, 'ycoord', 'y coordinates of location'
+   s_param :domain, 'domain', 'domain for request.'
+   service 'offHard' do |req, res|
+-    x = getParam(req, 'x')
+-    y = getParam(req, 'y')
+-    domain = getParam(req, 'domain')
+-    reboot(x,y,domain,req)
+     self.responseOK(res)
+   end
+   
+   #
+   # Implement 'offSoft' service using the 'service' method of AbstractService
+   #
+-  # NOTE: 
+-  # At NICTA, we do not have the CM card operational on our nodes yet...
+-  # We use the NA's 'REBOOT' command to implement a 'offSoft'
+-  #
+   s_info 'Switch off a node SOFT (execute halt) at a specific coordinate'
+   s_param :x, 'xcoord', 'x coordinates of location'
+   s_param :y, 'ycoord', 'y coordinates of location'
+   s_param :domain, 'domain', 'domain for request.'
+   service 'offSoft' do |req, res|
+-    x = getParam(req, 'x')
+-    y = getParam(req, 'y')
+-    domain = getParam(req, 'domain')
+-    reboot(x,y,domain,req)
+     self.responseOK(res)
+   end
+ 
+@@ -147,34 +127,15 @@
+   #
+   # Implement 'allOffSoft' service using the 'service' method of AbstractService
+   #
+-  # NOTE: 
+-  # At NICTA, we do not have the CM card operational on our nodes yet...
+-  # We use the NA's 'REBOOT' command to implement a 'allOffSoft'
+-  #
+   s_info 'Switch off ALL nodes SOFT (execute halt)'
+   s_param :domain, '[domain]', 'domain for request.'
+   service 'allOffSoft' do |req, res|
+-    domain = getParam(req, 'domain')
+-    tb = getTestbedConfig(req, @@config)
+-    inventoryURL = tb['inventory_url']
+-    nodes = listAllNodes(inventoryURL, domain)
+-    nodes.each { |n|
+-      x = n[0]; y = n[1]
+-      reboot(x,y,domain,req)
+-    }
+     self.responseOK(res)
+   end
+ 
+   #
+   # Implement 'getAllNodes' service using the 'service' method of AbstractService
+   #
+-  # NOTE: 
+-  # At NICTA, we do not have the CM card operational on our nodes yet...
+-  # We use the information in the CMC Stub config file to implement a 'getAllNodes'
+-  #
+-  # TODO: if still not CM card operational after a while, then this should 
+-  # really use information from the Inventory instead
+-  #
+   s_info 'Returns a list of all nodes in the testbed'
+   s_param :domain, '[domain]', 'domain for request.'
+   service 'getAllNodes' do |req, res|
+@@ -189,13 +150,6 @@
+   #
+   # Implement 'allStatus' service using the 'service' method of AbstractService
+   #
+-  # NOTE: 
+-  # At NICTA, we do not have the CM card operational on our nodes yet...
+-  # We use the information in the CMC Stub config file to implement a 'allStatus'
+-  #
+-  # TODO: if still not CM card operational after a while, then this should 
+-  # really use information from the Inventory instead
+-  #
+   s_info 'Returns the status of all nodes in the testbed'
+   s_param :domain, '[domain]', 'domain for request.'
+   service 'allStatus' do |req, res|
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/discoveryCommunicator.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/discoveryCommunicator.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/discoveryCommunicator.rb	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/discoveryCommunicator.rb	2009-12-07 01:10:51.000000000 -0600
+@@ -0,0 +1,221 @@
++#
++# = discoverCommunicator.rb
++#
++# A Publish/Subscribe Communicator to discover Control IPs for their
++# nodes and their corresponding coordinates.
++#
++# Connects to the XMPP server and waits for nodes to report their control IPs
++#
++# This class is more or less modeled after the XmppCommunicator class in omf-expctl
++# (the definition of that class will provide more implementation information)
++#
++
++require 'omf-common/omfPubSubService'
++
++class DiscoverPubSubCommunicator < MObject
++    DOMAIN = "Domain"
++    SYSTEM = "System"
++    INV_DOMAIN = "teratorn"
++
++    include Singleton
++    @@instantiated = false
++    @@user = nil
++    @@pass = nil
++    @@pubsub_node = nil
++    @@db_host = nil
++    @@db_user = nil
++    @@db_pass = nil
++    @@db = nil
++    @@inventory = nil
++
++    #
++    # Return the Instantiation
++    def DiscoverPubSubCommunicator.instantiated?
++	return @@instantiated
++    end
++
++    def initialize ()
++	@@service = nil
++	@@instantiated = true
++
++	@queue = Queue.new
++	Thread.new {
++	    while event = @queue.pop
++		execute_command(event)
++	    end
++	}
++    end
++
++    def start(params)
++	@@xmppIP = params['xmpp_server']
++	@@user = params['discover_user']
++	@@pass = params['discover_pass']
++	@@pubsub_node = params['discover_pubsub_node']
++	@@db_host = params['host']
++	@@db_user = params['user']
++	@@db_pass = params['password']
++	@@db = params['database']
++
++	# Create the Service Helper to interact with the PubSub Server
++	begin
++	    @@service = OmfPubSubService.new(@@user, @@pass, @@xmppIP)
++
++	    @@service.add_event_callback { |event|
++		@queue << event
++	    }
++
++	    @@service.join_pubsub_node("/#{DOMAIN}/#{SYSTEM}/#{@@user}")
++	rescue Exception => ex
++	    error "Failed to create ServiceHelper for PubSub Server '#{@@xmppIP}' - Error: '#{ex}'"
++	end
++
++	# keep connection to the PubSub server alive 
++	Thread.new do
++	    while true do
++		sleep 60*60
++		debug("Sending a ping to the XMPP server (keepalive)")
++		@@service.ping
++	    end
++	    @@service.quit()
++	end
++    end
++
++    #
++    # Process DISCOVER commands
++    # 
++    # After receiving a DISCOVER command:
++    # 1) Update the MySQL database with the new association between the control
++    # IP and the node coordinates 
++    #
++    # 2) Reply to the node, as it should wait for a response before continuing
++    #
++    # The format of the DISCOVER messages is:
++    #
++    # DISCOVER <nodeIdentifier> <nodeIP>
++    #
++    # e.g. DISCOVER 00:0c:29:60:09:d8 192.168.3.128
++    #
++    # And the response:
++    #
++    # OK <DISCOVER message item id> <nodeIdentifier> <nodeIP>
++    #
++    # e.g. OK 1234 00:0c:29:60:09:d8 192.168.3.128
++    #
++    # - event:: [Jabber::PubSub::Event]
++    #
++    def execute_command (event)
++	# Extract the Message from the PubSub Event
++	begin
++	    message = event.first_element("items")\
++		           .first_element("item")\
++			   .first_element("message")\
++			   .first_element("body").text
++	    if message.nil?
++		return
++	    end
++	rescue Exception => ex
++	    return
++	end
++
++	# Parse the Message to extract the Command
++	argArray = message.split(' ')
++	if (argArray.length < 1)
++	  error "Message too short! '#{message}'"
++	  return
++	end
++	 
++	# Process the command, if it is valid   
++	incomingPubSubNode = event.first_element("items").attributes['node']
++	if (argArray[0].upcase == "DISCOVER") 
++	    debug "Received on '#{incomingPubSubNode}' - msg: '#{message}'"
++	    begin
++		# Update the database
++		if (@@inventory == nil)
++		    @@inventory = MySQLInventory.new(@@db_host, @@db_user, @@db_pass, @@db);
++		end
++
++		# First, get the old IP of the node
++		ips = []
++		@@inventory.runQuery("SELECT ip FROM nodeToIP WHERE identifier='#{argArray[1]}';") {|result|
++		    ips << result
++		}
++
++		if (ips.size != 0)
++		    if ( ips[0] != argArray[2] ) 
++			# Update the nodeToIP table with the new IP address
++			if (ips.size > 1) 
++			    # Delete all entries and insert single entry
++			    @@inventory.runQuery("DELETE FROM nodeToIP WHERE identifier='#{argArray[1]};") {}
++
++			    @@inventory.runQuery("INSERT INTO nodeToIP SET ip='#{argArray[2]}', identifier='#{argArray[1]}';"){}
++			else
++			    # Do a update
++			    @@inventory.runQuery("UPDATE nodeToIP SET ip='#{argArray[2]}' WHERE identifier='#{argArray[1]}';"){}
++			end
++
++			# Update the nodes table to reflect the change of IP
++			ips.each {|ip|
++			    @@inventory.runQuery("UPDATE nodes SET control_ip='#{argArray[2]}' WHERE control_ip='#{ip}';"){}
++	    		    # Create the pubsub node for the new IP
++	    		    @@service.create_pubsub_node("/#{DOMAIN}/#{SYSTEM}/#{ip}")
++			}
++
++			# Send the response to the node
++			item_id = event.first_element("items")\
++				       .first_element("item").attribute("id").to_s
++			response = "OK #{item_id} #{argArray[1]} #{argArray[2]}"
++			item = Jabber::PubSub::Item.new
++			msg = Jabber::Message.new(nil, response);
++			item.add(msg)
++
++			@@service.publish_to_node("/#{DOMAIN}/#{SYSTEM}/#{@@user}", item)
++		    end
++		end
++	    rescue Exception => ex
++		error "Failed to process message: '#{message}' - Error: '#{ex}'"
++		return
++	    end
++	end
++    end
++end #class
++
++=begin DEBUGGING
++begin
++    DiscoverPubSubCommunicator.instance.start()
++
++    if (ARGV.size >= 3) 
++	# Send a test DISCOVER message #
++
++	# First, connect to the PubSub Server
++	service = OmfPubSubService.new(ARGV[0], ARGV[1], ARGV[2])
++
++	queue = Queue.new
++
++	service.add_event_callback { |event|
++	    queue << event
++	}
++
++	service.join_pubsub_node("/Domain/System/discoverd")
++
++	# Second, send the DISCOVER message
++	message = "DISCOVER [1,1] 192.168.3.128"
++	item = Jabber::PubSub::Item.new
++	msg = Jabber::Message.new(nil, message)
++	item.add(msg)
++	service.publish_to_node("/Domain/System/discoverd", item)
++
++	# Third, receive the response
++	while event = queue.pop
++	    response = event.first_element("items")\
++			    .first_element("item")\
++			    .first_element("message")\
++			    .first_element("body").text
++	    puts "Received response = #{response}"
++	    if (response == "OK #{item.id} [1,1] 192.168.3.128") 
++		puts "DISCOVER command successful"
++		break
++	    end
++	end
++    end
++end
++=end
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/inventory.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/inventory.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/inventory.rb	2009-10-16 03:46:28.000000000 -0500
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/inventory.rb	2009-12-05 22:40:33.000000000 -0600
+@@ -31,6 +31,7 @@
+ 
+ require 'omf-aggmgr/ogs/gridService'
+ require 'omf-aggmgr/ogs_inventory/mySQLInventory'
++require 'omf-aggmgr/ogs_inventory/discoveryCommunicator.rb'
+ 
+ #
+ # This class defines a Service to access inventory information about available
+@@ -60,6 +61,8 @@
+   # These are the current configuration parameters available for testbeds running OMF
+   CONST_CONFIG_KEYS = [ 'x_max', 'y_max', 'pxe_url', 'cmc_url', 
+                         'frisbee_url', 'frisbee_default_disk', 'saveimage_url', 'oml_url']
++
++
+  
+   # From Winlab, please fix/clean 
+   #
+@@ -464,10 +467,17 @@
+   #
+   # Configure the service through a hash of options
+   #
++  # Also starts the discovery service
++  #
+   # - config = the Hash holding the config parameters for this service
+   #
+   def self.configure(config)
+     @@config = config
++
++    # XXX This assumes that the domain is 'default', this could cause issues
++    # if the domain is changed
++    DiscoverPubSubCommunicator.instance.start(@@config['testbed']['default'])
++
+   end
+   
+   #
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/mySQLInventory.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/mySQLInventory.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/mySQLInventory.rb	2009-09-16 23:57:30.000000000 -0500
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/mySQLInventory.rb	2009-12-07 00:57:53.000000000 -0600
+@@ -104,7 +104,7 @@
+       reply=@my.query(query)
+       # Check if the SQL result contains anything at all...
+       # If so, then call the block of commands to process it
+-      if (reply.num_rows() > 0)
++      if (reply != nil && reply.num_rows() > 0)
+         reply.each() { |result|
+           debug "SQL Reply: '#{result.to_s}'"
+           yield(result)
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/mySQLInventory.rb.winlab.waiting.good.invDB omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/mySQLInventory.rb.winlab.waiting.good.invDB
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/mySQLInventory.rb.winlab.waiting.good.invDB	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_inventory/mySQLInventory.rb.winlab.waiting.good.invDB	2009-07-30 06:35:03.000000000 -0500
+@@ -494,11 +494,11 @@
+     value = nil
+     case key
+       when "pxe_url" 
+-        value = 'http://pxe:5052/pxe'
++        value = 'http://pxe:5022/pxe'
+       when "cmc_url" 
+         value = "http://cmc:5012/cmc"
+       when "frisbee_url" 
+-        value = 'http://frisbee:5052/frisbee'
++        value = 'http://frisbee:5022/frisbee'
+       when "frisbee_default_disk" 
+         value = '/dev/hda'
+       when "x_max" 
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs.rb	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs.rb	2009-12-07 00:26:26.000000000 -0600
+@@ -81,10 +81,9 @@
+ # Our Version Number
+ #
+ OMF_VERSION = OMF::Common::VERSION(__FILE__)
+-OMF_MM_VERSION = OMF::Common::MM_VERSION()
+ OMF_VERSION_STRING = "OMF Aggregate Manager #{OMF_VERSION}"
+ 
+-DEF_SEARCH_PATH = [".", "../etc/omf-aggmgr-#{OMF_MM_VERSION}", "/etc/omf-aggmgr-#{OMF_MM_VERSION}"]
++DEF_SEARCH_PATH = [".", "../etc/omf-aggmgr", "/etc/omf-aggmgr"]
+ DEF_CONFIG_FILE = 'gridservice_cfg.yaml'
+ DEF_WEB_PORT = 5012
+ 
+@@ -306,7 +305,7 @@
+ #
+ # Handle Command-line Options...
+ #
+-logParams = {:env => "GRID_SERVICES_LOG", :fileName => "def_gridservices_log.xml",
++logParams = {:env => "GRID_SERVICE_LOG", :fileName => "def_gridservices_log.xml",
+   :searchPath => DEF_SEARCH_PATH}
+ params = {}
+ 
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_result/result.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_result/result.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/ogs_result/result.rb	2009-11-04 19:34:42.000000000 -0600
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/ogs_result/result.rb	2009-08-02 23:25:28.000000000 -0500
+@@ -121,18 +121,21 @@
+     # Retrieve the request parameter
+     id = getParam(req, 'expID')
+     # Access and Query the experiment database
+-    dump = nil
++    result = nil
+     begin
+       path = "#{@@config['database_path']}/#{id}.sq3" 
+       cmd = "#{@@config['sqlite3_path']} #{path} .dump"
+-      dump =  `#{cmd}`
++      result =  `#{cmd}`
+     rescue Exception => ex
+       error "Result - Error dumping the experiment measurement database --- ID: #{id} --- '#{ex}'"
+     end
+-    # The database dump should be returned as a pain text 
+-    # So the user can load the dump directly with SQLite3 without any reformatting
+-    result = "--\n-- Database Dump\n-- Experiment ID: #{id}\n--\n" + dump 
+-    setResponsePlainText(res, result)
++    # Build and Set the XML response
++    msgEmpty = "No data from this experiment measurement database --- ID: #{id} --- #{ex} "
++    replyXML = buildXMLReply("DATABASE", result, msgEmpty) { |root,lines|
++      addXMLElement(root, "DUMP", "#{lines}")
++    }
++    replyXML.add_attribute("ExperimentID", "#{id}")
++    setResponse(res, replyXML)
+   end
+   
+   #
+diff -Nur omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/omf_create_sysnode.rb omf-5.2/omf-aggmgr/ruby/omf-aggmgr/omf_create_sysnode.rb
+--- omf-5.2.clean/omf-aggmgr/ruby/omf-aggmgr/omf_create_sysnode.rb	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-aggmgr/ruby/omf-aggmgr/omf_create_sysnode.rb	1969-12-31 18:00:00.000000000 -0600
+@@ -1,42 +0,0 @@
+-#!/usr/bin/ruby
+-#
+-# Copyright (c) 2006-2009 National ICT Australia (NICTA), Australia
+-#
+-# Copyright (c) 2004-2009 - WINLAB, Rutgers University, USA
+-#
+-# Permission is hereby granted, free of charge, to any person obtaining a copy
+-# of this software and associated documentation files (the "Software"), to deal
+-# in the Software without restriction, including without limitation the rights
+-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-# copies of the Software, and to permit persons to whom the Software is
+-# furnished to do so, subject to the following conditions:
+-#
+-# The above copyright notice and this permission notice shall be included in
+-# all copies or substantial portions of the Software.
+-#
+-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-# THE SOFTWARE.
+-
+-require "omf-common/omfPubSubService"
+-
+-if ARGV.length != 2
+-  puts "Usage: #{$0} <IP address of XMPP server> <IP address of node to add>"
+-  exit 0
+-end
+-
+-begin
+-  @@service = OmfPubSubService.new("aggmgr", "123", ARGV[0])
+-rescue Exception => ex
+-  puts "ERROR Creating ServiceHelper - '#{ex}'"
+-end
+-
+-puts "Connected to PubSub Server: '#{ARGV[0]}'"
+-    
+-@@service.create_pubsub_node("/Domain")
+-@@service.create_pubsub_node("/Domain/System")
+-@@service.create_pubsub_node("/Domain/System/#{ARGV[1]}")
+\ No newline at end of file
+diff -Nur omf-5.2.clean/omf-aggmgr/sbin/omf-aggmgr omf-5.2/omf-aggmgr/sbin/omf-aggmgr
+--- omf-5.2.clean/omf-aggmgr/sbin/omf-aggmgr	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-aggmgr/sbin/omf-aggmgr	2009-05-19 04:40:49.000000000 -0500
+@@ -24,12 +24,15 @@
+ #
+ #
+ 
+-VER=5.2
+ APP=omf-aggmgr/ogs.rb
+-if [ -e /usr/share/omf-aggmgr-$VER/$APP ]; then
+-   PDIR=/usr/share/omf-aggmgr-$VER
+-else
+-   echo "Cannot find the ruby module location ($APP)."
+-   exit 1;
++if [ -e ../$APP ]; then
++   PDIR=..
++else 
++   if [ -e /usr/lib/ruby/1.8/$APP ]; then
++      PDIR=/usr/lib/ruby/1.8
++   else
++      echo "Cannot find the ruby module location ($APP)."
++      exit 1;
++   fi
+ fi
+-exec ruby1.8 -I$PDIR -I/usr/share/omf-common-$VER $PDIR/$APP $*
++exec ruby1.8 -I$PDIR $PDIR/$APP $*
+diff -Nur omf-5.2.clean/omf-aggmgr/sbin/omf_create_sysnode omf-5.2/omf-aggmgr/sbin/omf_create_sysnode
+--- omf-5.2.clean/omf-aggmgr/sbin/omf_create_sysnode	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-aggmgr/sbin/omf_create_sysnode	1969-12-31 18:00:00.000000000 -0600
+@@ -1,35 +0,0 @@
+-#!/bin/bash
+-#
+-# Copyright (c) 2006-2009 National ICT Australia (NICTA), Australia
+-#
+-# Copyright (c) 2004-2009 WINLAB, Rutgers University, USA
+-#
+-# Permission is hereby granted, free of charge, to any person obtaining a copy
+-# of this software and associated documentation files (the "Software"), to deal
+-# in the Software without restriction, including without limitation the rights
+-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-# copies of the Software, and to permit persons to whom the Software is
+-# furnished to do so, subject to the following conditions:
+-#
+-# The above copyright notice and this permission notice shall be included in
+-# all copies or substantial portions of the Software.
+-#
+-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-# THE SOFTWARE.
+-#
+-#
+-
+-VER=-5.2
+-APP=omf_create_sysnode.rb
+-if [ -e /usr/share/omf-aggmgr$VER/omf-aggmgr/$APP ]; then
+-   PDIR=/usr/share/omf-aggmgr$VER/omf-aggmgr
+-else
+-   echo "Cannot find the ruby module location ($APP)."
+-   exit 1;
+-fi
+-exec ruby1.8 -I/usr/share/omf-common$VER $PDIR/$APP $*
+diff -Nur omf-5.2.clean/omf-common/debian/changelog omf-5.2/omf-common/debian/changelog
+--- omf-5.2.clean/omf-common/debian/changelog	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-common/debian/changelog	2009-10-16 04:52:18.000000000 -0500
+@@ -1,6 +1,36 @@
+-omf-common-5.2 (1) stable; urgency=low
++omf-common (5.2-1) stable; urgency=low
++
++  * first OMF 5.2 release package
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 16 Oct 2009 20:27:58 +1100
++
++omf-common (5.0-4) stable; urgency=low
++
++  * added keepalive support for XMPP
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 25 Sep 2009 16:24:26 +1000
++
++omf-common (5.0-3) stable; urgency=low
++
++  * fixed omf tell
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Thu, 17 Sep 2009 13:42:03 +1000
++
++omf-common (5.0-2) stable; urgency=low
++
++  * changed distribution to stable
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Mon, 07 Sep 2009 15:21:58 +1000
++
++omf-common (5.0-1ubuntu1) hardy; urgency=low
++
++  * various XMPP improvements
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Mon, 03 Aug 2009 14:25:12 +1000
++
++omf-common (5.0-1) testing; urgency=low
+ 
+   * Initial release
+ 
+- -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 6 Nov 2009 16:59:49 +1000
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 17 Apr 2009 16:59:49 +1000
+ 
+diff -Nur omf-5.2.clean/omf-common/debian/control omf-5.2/omf-common/debian/control
+--- omf-5.2.clean/omf-common/debian/control	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-common/debian/control	2009-09-16 01:11:07.000000000 -0500
+@@ -1,13 +1,13 @@
+-Source: omf-common-5.2
++Source: omf-common
+ Priority: extra
+ Maintainer: Christoph Dwertmann <christoph.dwertmann@nicta.com.au>
+ Build-Depends: debhelper (>= 5)
+ Standards-Version: 3.7.2
+ Section: omf
+ 
+-Package: omf-common-5.2
++Package: omf-common
+ Section: omf
+-Architecture: all
++Architecture: any
+ Depends: liblog4r-ruby, libxmpp4r-ruby (>=1.0-bugfix1)
+ Description: Common ruby classes for OMF
+  Ruby classes commonly required by OMF Experiment Controller, Resource Controller and Aggregate Manager
+diff -Nur omf-5.2.clean/omf-common/debian/dirs omf-5.2/omf-common/debian/dirs
+--- omf-5.2.clean/omf-common/debian/dirs	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-common/debian/dirs	2009-04-17 02:44:54.000000000 -0500
+@@ -0,0 +1,2 @@
++usr/lib/ruby/1.8
++
+diff -Nur omf-5.2.clean/omf-common/debian/rules omf-5.2/omf-common/debian/rules
+--- omf-5.2.clean/omf-common/debian/rules	2009-11-05 23:30:12.000000000 -0600
++++ omf-5.2/omf-common/debian/rules	2009-04-17 03:35:43.000000000 -0500
+@@ -9,7 +9,8 @@
+ # Uncomment this to turn on verbose mode.
+ #export DH_VERBOSE=1
+ 
+-PKG_NAME=omf-common-5.2
++
++
+ 
+ # shared library versions, option 1
+ version=2.0.5
+@@ -52,8 +53,7 @@
+ 	dh_installdirs
+ 
+ 	# Add here commands to install the package into debian/tmp	
+-	mkdir -p debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
+-	tar -C ruby -cf - --exclude='.svn' omf-common | tar -xf - -C debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
++	tar -C ruby -cf - --exclude='.svn' omf-common | tar -xf - -C $(CURDIR)/debian/omf-common/usr/lib/ruby/1.8/
+ 	
+ # Build architecture-independent files here.
+ binary-indep: build install
+diff -Nur omf-5.2.clean/omf-common/ruby/omf-common/ifconfig/linux/ifconfig.rb omf-5.2/omf-common/ruby/omf-common/ifconfig/linux/ifconfig.rb
+--- omf-5.2.clean/omf-common/ruby/omf-common/ifconfig/linux/ifconfig.rb	2009-09-16 23:57:30.000000000 -0500
++++ omf-5.2/omf-common/ruby/omf-common/ifconfig/linux/ifconfig.rb	2009-12-06 01:51:06.000000000 -0600
+@@ -1,7 +1,7 @@
+ # $Id: ifconfig.rb,v 1.5 2004/02/21 07:44:59 daniel Exp $
+ #
+ 
+-require 'lib/ifconfig/common/ifconfig'
++require 'omf-common/ifconfig/common/ifconfig'
+ 
+ class Ifconfig
+   #
+@@ -18,8 +18,8 @@
+     end
+     @verbose = verbose
+ 
+-    require 'lib/ifconfig/linux/network_types'
+-    require 'lib/ifconfig/linux/interface_types'
++    require 'omf-common/ifconfig/linux/network_types'
++    require 'omf-common/ifconfig/linux/interface_types'
+ 
+     @ifaces = {}
+ 
+diff -Nur omf-5.2.clean/omf-common/ruby/omf-common/ifconfig/linux/interface_types.rb omf-5.2/omf-common/ruby/omf-common/ifconfig/linux/interface_types.rb
+--- omf-5.2.clean/omf-common/ruby/omf-common/ifconfig/linux/interface_types.rb	2009-09-16 23:57:30.000000000 -0500
++++ omf-5.2/omf-common/ruby/omf-common/ifconfig/linux/interface_types.rb	2009-12-06 01:51:31.000000000 -0600
+@@ -1,7 +1,7 @@
+ # $Id: interface_types.rb,v 1.6 2004/02/21 07:44:59 daniel Exp $
+ #
+ 
+-require 'lib/ifconfig/common/interface_types'
++require 'omf-common/ifconfig/common/interface_types'
+ 
+ class NetworkAdapter
+   # Parse activity on interface
+diff -Nur omf-5.2.clean/omf-common/ruby/omf-common/ifconfig/linux/network_types.rb omf-5.2/omf-common/ruby/omf-common/ifconfig/linux/network_types.rb
+--- omf-5.2.clean/omf-common/ruby/omf-common/ifconfig/linux/network_types.rb	2009-09-16 23:57:30.000000000 -0500
++++ omf-5.2/omf-common/ruby/omf-common/ifconfig/linux/network_types.rb	2009-12-06 01:51:41.000000000 -0600
+@@ -1,7 +1,7 @@
+ # $Id: network_types.rb,v 1.4 2004/02/21 07:44:59 daniel Exp $
+ #
+ 
+-require 'lib/ifconfig/common/network_types'
++require 'omf-common/ifconfig/common/network_types'
+ 
+ #
+ # Base class for IPX and Appletalk classes
+diff -Nur omf-5.2.clean/omf-common/ruby/omf-common/ifconfig.rb omf-5.2/omf-common/ruby/omf-common/ifconfig.rb
+--- omf-5.2.clean/omf-common/ruby/omf-common/ifconfig.rb	2009-09-16 23:57:30.000000000 -0500
++++ omf-5.2/omf-common/ruby/omf-common/ifconfig.rb	2009-12-06 01:56:04.000000000 -0600
+@@ -45,7 +45,7 @@
+   #
+   def initialize(platform=nil,input=nil,netstat=nil)
+     platform = self.get_os unless !platform.nil?
+-    require "lib/ifconfig/linux/ifconfig"
++    require "omf-common/ifconfig/linux/ifconfig"
+     @cfg = Ifconfig.new(input,netstat)
+   end
+   def parse
+diff -Nur omf-5.2.clean/omf-common/ruby/omf-common/omfVersion.rb omf-5.2/omf-common/ruby/omf-common/omfVersion.rb
+--- omf-5.2.clean/omf-common/ruby/omf-common/omfVersion.rb	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-common/ruby/omf-common/omfVersion.rb	2009-09-17 00:23:23.000000000 -0500
+@@ -35,10 +35,6 @@
+     VERSION_MAJOR = 5
+     VERSION_MINOR = 2
+ 
+-    def self.MM_VERSION()
+-      return "#{VERSION_MAJOR}.#{VERSION_MINOR}"
+-    end
+-
+     #
+     # Return the full version number for an OMF software
+     #
+diff -Nur omf-5.2.clean/omf-expctl/bin/omf omf-5.2/omf-expctl/bin/omf
+--- omf-5.2.clean/omf-expctl/bin/omf	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-expctl/bin/omf	2009-04-17 01:51:17.000000000 -0500
+@@ -24,9 +24,6 @@
+ #
+ #
+ 
+-# determine OMF version
+-if [ ${0#*-} != $0 ]; then VER=-${0#*-}; fi
+-
+ # Retrieve command line
+ MY_NAME=`echo $0 | awk 'BEGIN {FS="/"};{print $NF}'`
+ FULL_ARG_LINE=$@
+@@ -54,9 +51,9 @@
+ 
+ # Parse command line
+ case "$CMD_NAME" in
+-  "exec" | "load" | "save" | "tell" | "stat" ) CMD_TO_RUN="omf_$CMD_NAME$VER" ;;
++  "exec" | "load" | "save" | "tell" | "stat" ) CMD_TO_RUN="omf_$CMD_NAME" ;;
+   "help" ) case "$CMD_ARG_LINE" in
+-             "exec" | "load" | "save" | "tell" | "stat" ) CMD_TO_RUN="omf_$CMD_ARG_LINE$VER" ; CMD_ARG_LINE="--help";;
++             "exec" | "load" | "save" | "tell" | "stat" ) CMD_TO_RUN="omf_$CMD_ARG_LINE" ; CMD_ARG_LINE="--help";;
+ 	     * ) usage ; exit 0 ;;
+ 	   esac ;;
+   * ) usage ; exit 0 ;;
+diff -Nur omf-5.2.clean/omf-expctl/bin/omf_create_sysnode omf-5.2/omf-expctl/bin/omf_create_sysnode
+--- omf-5.2.clean/omf-expctl/bin/omf_create_sysnode	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-expctl/bin/omf_create_sysnode	2009-09-17 00:47:09.000000000 -0500
+@@ -0,0 +1,20 @@
++#!/usr/bin/ruby1.8
++
++require "omf-common/omfPubSubService"
++
++if ARGV.length != 2
++  puts "Usage: #{$0} <IP address of XMPP server> <IP address of node to add>"
++  exit 0
++end
++
++begin
++  @@service = OmfPubSubService.new("aggmgr", "123", ARGV[0])
++rescue Exception => ex
++  puts "ERROR Creating ServiceHelper - '#{ex}'"
++end
++
++puts "Connected to PubSub Server: '#{ARGV[0]}'"
++    
++@@service.create_pubsub_node("/Domain")
++@@service.create_pubsub_node("/Domain/System")
++@@service.create_pubsub_node("/Domain/System/#{ARGV[1]}")
+diff -Nur omf-5.2.clean/omf-expctl/bin/omf_exec omf-5.2/omf-expctl/bin/omf_exec
+--- omf-5.2.clean/omf-expctl/bin/omf_exec	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-expctl/bin/omf_exec	2009-08-26 02:53:30.000000000 -0500
+@@ -23,14 +23,11 @@
+ # THE SOFTWARE.
+ #
+ #
+-
+-VER=-5.2
+-	
+ APP=omf-expctl.rb
+-if [ -e /usr/share/omf-expctl$VER/$APP ]; then
+-   PDIR=/usr/share/omf-expctl$VER
++if [ -e /usr/lib/ruby/1.8/$APP ]; then
++   PDIR=/usr/lib/ruby/1.8
+ else
+-   echo "Cannot find the ruby module location ($APP)."
++   echo "Cannot find the ruby module $APP"
+    exit 1;
+ fi
+-exec ruby1.8 -I$PDIR -I/usr/share/omf-common$VER $PDIR/$APP $*
++exec ruby1.8 -I$PDIR $PDIR/$APP $*
+diff -Nur omf-5.2.clean/omf-expctl/bin/omf_load omf-5.2/omf-expctl/bin/omf_load
+--- omf-5.2.clean/omf-expctl/bin/omf_load	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-expctl/bin/omf_load	2009-09-16 21:02:13.000000000 -0500
+@@ -24,9 +24,6 @@
+ #
+ #
+ 
+-# determine OMF version
+-if [ ${0#*-} != $0 ]; then VER=-${0#*-}; fi
+-
+ # Names of PXE images are not retrieved from the Inventory
+ #PXE_VERSION=sata-2.0.1 # TR: 'sata-2.0.1' at Nicta
+ #PXE_VERSION=1.2.1-omf # TR: 'orbit-1.2.1-omf' at Winlab
+@@ -98,7 +95,7 @@
+   timeout=$DEF_TIMEOUT
+ fi
+ 
+-OMF=omf$VER
++OMF=/usr/bin/omf
+ 
+ if [ -z $domain ] 
+ then
+diff -Nur omf-5.2.clean/omf-expctl/bin/omf_save omf-5.2/omf-expctl/bin/omf_save
+--- omf-5.2.clean/omf-expctl/bin/omf_save	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-expctl/bin/omf_save	2009-09-16 21:02:13.000000000 -0500
+@@ -24,9 +24,6 @@
+ #
+ #
+ 
+-# determine OMF version
+-if [ ${0#*-} != $0 ]; then VER=-${0#*-}; fi
+-
+ # Names of PXE images are not retrieved from the Inventory
+ #PXE_VERSION=sata-2.0.1 # TR: 'sata-2.0.1' at Nicta
+ #PXE_VERSION=1.2.1-omf # TR: 'orbit-1.2.1-omf' at Winlab
+@@ -55,14 +52,9 @@
+   usage ; exit 1
+ fi
+ 
+-if [ $USER == 'root' ] ; then
+-  echo "You cannot save images as superuser (root). Exiting."
+-  exit 1
+-fi
+-
+ function saveimage()
+ {
+-  OMF=omf$VER
++  OMF=omf
+   DOMAIN=$2
+   if [ -z $DOMAIN ] ;then
+     echo " "
+diff -Nur omf-5.2.clean/omf-expctl/bin/omf_stat omf-5.2/omf-expctl/bin/omf_stat
+--- omf-5.2.clean/omf-expctl/bin/omf_stat	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-expctl/bin/omf_stat	2009-06-09 21:53:16.000000000 -0500
+@@ -25,8 +25,6 @@
+ #
+ #
+ 
+-VER=-5.2
+-
+ APP=omf-expctl/statnode.rb
+ TOPO_ALL=system:topo:all
+ MY_NAME="$ROOTAPP stat"
+@@ -82,11 +80,11 @@
+   domain="default"
+ fi
+ 
+-if [ -e /usr/share/omf-expctl$VER/$APP ]; then
+-   PDIR=/usr/share/omf-expctl$VER
++if [ -e /usr/lib/ruby/1.8/$APP ]; then
++  PDIR=/usr/lib/ruby/1.8
+ else
+-   echo "Cannot find the ruby module location ($APP)."
+-   exit 1;
++  echo "Cannot find the ruby module $APP"
++  exit 1;
+ fi
+    
+-exec ruby1.8 -I$PDIR -I/usr/share/omf-common$VER $PDIR/$APP "[$topo_or_cmd]" $domain
++exec ruby1.8 -I$PDIR $PDIR/$APP "[$topo_or_cmd]" $domain
+diff -Nur omf-5.2.clean/omf-expctl/bin/omf_tell omf-5.2/omf-expctl/bin/omf_tell
+--- omf-5.2.clean/omf-expctl/bin/omf_tell	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-expctl/bin/omf_tell	2009-06-09 21:53:16.000000000 -0500
+@@ -24,8 +24,6 @@
+ #
+ #
+ 
+-VER=-5.2
+-
+ APP=omf-expctl/tellnode.rb
+ TOPO_ALL=system:topo:all
+ MY_NAME="$ROOTAPP tell"
+@@ -80,11 +78,12 @@
+   topo=$TOPO_ALL
+ fi
+ 
+-if [ -e /usr/share/omf-expctl$VER/$APP ]; then
+-   PDIR=/usr/share/omf-expctl$VER
++if [ -e /usr/lib/ruby/1.8/$APP ]; then
++   PDIR=/usr/lib/ruby/1.8
+ else
+-   echo "Cannot find the ruby module location ($APP)."
++   echo "Cannot find the ruby module $APP"
+    exit 1;
+ fi
+ 
+-exec ruby1.8 -I$PDIR -I/usr/share/omf-common$VER $PDIR/$APP $cmd "[$topo]" $domain
++exec ruby1.8 -I$PDIR $PDIR/$APP $cmd "[$topo]" $domain
++
+diff -Nur omf-5.2.clean/omf-expctl/debian/changelog omf-5.2/omf-expctl/debian/changelog
+--- omf-5.2.clean/omf-expctl/debian/changelog	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-expctl/debian/changelog	2009-10-16 04:52:18.000000000 -0500
+@@ -1,5 +1,51 @@
+-omf-expctl-5.2 (1) stable; urgency=low
++omf-expctl (5.2-1) stable; urgency=low
++
++  * first OMF 5.2 release package
++  * support for saveimage gridservice
++  * better free webserver port detection
++  * moved webserver access logs to /tmp
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 16 Oct 2009 20:29:45 +1100
++
++omf-expctl (5.0-6) stable; urgency=low
++
++  * included omf_create_sysnode script
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 25 Sep 2009 10:52:39 +1000
++
++omf-expctl (5.0-5) stable; urgency=low
++
++  * fixed omf tell
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Thu, 17 Sep 2009 13:42:34 +1000
++
++omf-expctl (5.0-4) stable; urgency=low
++
++  * fixed bug #120
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Tue, 15 Sep 2009 16:40:50 +1000
++
++omf-expctl (5.0-3) stable; urgency=low
++
++  * now includes missing file omf-expctl.rb
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Tue, 08 Sep 2009 14:09:28 +1000
++
++omf-expctl (5.0-2) stable; urgency=low
++
++  * changed distribution to stable
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Mon, 07 Sep 2009 15:22:34 +1000
++
++omf-expctl (5.0-1ubuntu1) hardy; urgency=low
++
++  * XMPP improvements
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Mon, 03 Aug 2009 14:25:58 +1000
++
++omf-expctl (5.0-1) testing; urgency=low
++
++  * Initial release
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 17 Apr 2009 18:00:40 +1000
+ 
+-  * Initial release.
+-  
+- -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 06 Nov 2009 16:41:16 +1100
+diff -Nur omf-5.2.clean/omf-expctl/debian/control omf-5.2/omf-expctl/debian/control
+--- omf-5.2.clean/omf-expctl/debian/control	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-expctl/debian/control	2009-10-16 04:52:18.000000000 -0500
+@@ -1,13 +1,13 @@
+-Source: omf-expctl-5.2
++Source: omf-expctl
+ Section: omf
+ Priority: extra
+ Maintainer: Christoph Dwertmann <christoph.dwertmann@nicta.com.au>
+ Build-Depends: debhelper (>= 5)
+ Standards-Version: 3.7.2
+ 
+-Package: omf-expctl-5.2
+-Architecture: all
+-Depends: libmarkaby-ruby, rubygems, omf-common-5.2, libcoderay-ruby1.8, netcat
++Package: omf-expctl
++Architecture: any
++Depends: libmarkaby-ruby, rubygems, omf-common, libcoderay-ruby1.8, netcat
+ Description: OMF Experiment Controller
+  Controls experiments in the OMF testbed.
+ 
+diff -Nur omf-5.2.clean/omf-expctl/debian/dirs omf-5.2/omf-expctl/debian/dirs
+--- omf-5.2.clean/omf-expctl/debian/dirs	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-expctl/debian/dirs	2009-05-22 01:08:04.000000000 -0500
+@@ -1,3 +1,4 @@
++usr/lib/ruby/1.8
+ etc
+ usr/bin
+-/usr/share
+\ No newline at end of file
++usr/share/omf-expctl
+\ No newline at end of file
+diff -Nur omf-5.2.clean/omf-expctl/debian/omf-expctl-5.2.postinst omf-5.2/omf-expctl/debian/omf-expctl-5.2.postinst
+--- omf-5.2.clean/omf-expctl/debian/omf-expctl-5.2.postinst	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-expctl/debian/omf-expctl-5.2.postinst	1969-12-31 18:00:00.000000000 -0600
+@@ -1,50 +0,0 @@
+-#! /bin/sh
+-#
+-# see: dh_installdeb(1)
+-
+-set -e
+-
+-# summary of how this script can be called:
+-#        * <postinst> configure' <most-recently-configured-version>
+-#        * <old-postinst> abort-upgrade' <new version>
+-#        * <conflictor's-postinst> abort-remove' in-favour' <package>
+-#          <new-version>
+-#        * <deconfigured's-postinst> abort-deconfigure' in-favour'
+-#          <failed-install-package> <version> removing'
+-#          <conflicting-package> <version>
+-# for details, see http://www.debian.org/doc/debian-policy/ or
+-# the debian-policy package
+-#
+-
+-VER=5.2
+-
+-case "$1" in
+-    install|configure)
+-    
+-    #
+-    # Source debconf library
+-    #
+-    . /usr/share/debconf/confmodule
+-
+-    update-alternatives --install /usr/bin/omf omf /usr/bin/omf-$VER 50
+-    update-alternatives --install /usr/bin/omf_exec omf_exec /usr/bin/omf_exec-$VER 50
+-    update-alternatives --install /usr/bin/omf_load omf_load /usr/bin/omf_load-$VER 50
+-    update-alternatives --install /usr/bin/omf_save omf_save /usr/bin/omf_save-$VER 50
+-    update-alternatives --install /usr/bin/omf_stat omf_stat /usr/bin/omf_stat-$VER 50    
+-    update-alternatives --install /usr/bin/omf_tell omf_tell /usr/bin/omf_tell-$VER 50
+-    ;;
+-    
+-    abort-upgrade|abort-remove|abort-deconfigure)
+-    ;;		
+-    
+-    *)
+-    echo "postinst called with unknown argument \$1'" >&2
+-    exit 1
+-    ;;
+-esac
+-					
+-# dh_installdeb will replace this with shell code automatically
+-# generated by other debhelper scripts.
+-					
+-#DEBHELPER#
+-exit 0
+diff -Nur omf-5.2.clean/omf-expctl/debian/omf-expctl-5.2.prerm omf-5.2/omf-expctl/debian/omf-expctl-5.2.prerm
+--- omf-5.2.clean/omf-expctl/debian/omf-expctl-5.2.prerm	2009-11-19 02:51:27.000000000 -0600
++++ omf-5.2/omf-expctl/debian/omf-expctl-5.2.prerm	1969-12-31 18:00:00.000000000 -0600
+@@ -1,15 +0,0 @@
+-#! /bin/sh
+-
+-VER=5.2
+-update-alternatives --remove omf /usr/bin/omf-$VER
+-update-alternatives --remove omf_exec /usr/bin/omf_exec-$VER
+-update-alternatives --remove omf_load /usr/bin/omf_load-$VER
+-update-alternatives --remove omf_save /usr/bin/omf_save-$VER
+-update-alternatives --remove omf_stat /usr/bin/omf_stat-$VER    
+-update-alternatives --remove omf_tell /usr/bin/omf_tell-$VER
+-					
+-# dh_installdeb will replace this with shell code automatically
+-# generated by other debhelper scripts.
+-					
+-#DEBHELPER#
+-exit 0
+diff -Nur omf-5.2.clean/omf-expctl/debian/postinst.ex omf-5.2/omf-expctl/debian/postinst.ex
+--- omf-5.2.clean/omf-expctl/debian/postinst.ex	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-expctl/debian/postinst.ex	2009-04-17 03:35:43.000000000 -0500
+@@ -0,0 +1,41 @@
++#!/bin/sh
++# postinst script for omf-expctl
++#
++# see: dh_installdeb(1)
++
++set -e
++
++# summary of how this script can be called:
++#        * <postinst> `configure' <most-recently-configured-version>
++#        * <old-postinst> `abort-upgrade' <new version>
++#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
++#          <new-version>
++#        * <postinst> `abort-remove'
++#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
++#          <failed-install-package> <version> `removing'
++#          <conflicting-package> <version>
++# for details, see http://www.debian.org/doc/debian-policy/ or
++# the debian-policy package
++
++
++case "$1" in
++    configure)
++    ;;
++
++    abort-upgrade|abort-remove|abort-deconfigure)
++    ;;
++
++    *)
++        echo "postinst called with unknown argument \`$1'" >&2
++        exit 1
++    ;;
++esac
++
++# dh_installdeb will replace this with shell code automatically
++# generated by other debhelper scripts.
++
++#DEBHELPER#
++
++exit 0
++
++
+diff -Nur omf-5.2.clean/omf-expctl/debian/postrm.ex omf-5.2/omf-expctl/debian/postrm.ex
+--- omf-5.2.clean/omf-expctl/debian/postrm.ex	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-expctl/debian/postrm.ex	2009-04-17 03:35:43.000000000 -0500
+@@ -0,0 +1,39 @@
++#!/bin/sh
++# postrm script for omf-expctl
++#
++# see: dh_installdeb(1)
++
++set -e
++
++# summary of how this script can be called:
++#        * <postrm> `remove'
++#        * <postrm> `purge'
++#        * <old-postrm> `upgrade' <new-version>
++#        * <new-postrm> `failed-upgrade' <old-version>
++#        * <new-postrm> `abort-install'
++#        * <new-postrm> `abort-install' <old-version>
++#        * <new-postrm> `abort-upgrade' <old-version>
++#        * <disappearer's-postrm> `disappear' <overwriter>
++#          <overwriter-version>
++# for details, see http://www.debian.org/doc/debian-policy/ or
++# the debian-policy package
++
++
++case "$1" in
++    purge|remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
++    ;;
++
++    *)
++        echo "postrm called with unknown argument \`$1'" >&2
++        exit 1
++    ;;
++esac
++
++# dh_installdeb will replace this with shell code automatically
++# generated by other debhelper scripts.
++
++#DEBHELPER#
++
++exit 0
++
++
+diff -Nur omf-5.2.clean/omf-expctl/debian/preinst.ex omf-5.2/omf-expctl/debian/preinst.ex
+--- omf-5.2.clean/omf-expctl/debian/preinst.ex	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-expctl/debian/preinst.ex	2009-04-17 03:35:43.000000000 -0500
+@@ -0,0 +1,37 @@
++#!/bin/sh
++# preinst script for omf-expctl
++#
++# see: dh_installdeb(1)
++
++set -e
++
++# summary of how this script can be called:
++#        * <new-preinst> `install'
++#        * <new-preinst> `install' <old-version>
++#        * <new-preinst> `upgrade' <old-version>
++#        * <old-preinst> `abort-upgrade' <new-version>
++# for details, see http://www.debian.org/doc/debian-policy/ or
++# the debian-policy package
++
++
++case "$1" in
++    install|upgrade)
++    ;;
++
++    abort-upgrade)
++    ;;
++
++    *)
++        echo "preinst called with unknown argument \`$1'" >&2
++        exit 1
++    ;;
++esac
++
++# dh_installdeb will replace this with shell code automatically
++# generated by other debhelper scripts.
++
++#DEBHELPER#
++
++exit 0
++
++
+diff -Nur omf-5.2.clean/omf-expctl/debian/prerm.ex omf-5.2/omf-expctl/debian/prerm.ex
+--- omf-5.2.clean/omf-expctl/debian/prerm.ex	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-expctl/debian/prerm.ex	2009-04-17 03:35:43.000000000 -0500
+@@ -0,0 +1,40 @@
++#!/bin/sh
++# prerm script for omf-expctl
++#
++# see: dh_installdeb(1)
++
++set -e
++
++# summary of how this script can be called:
++#        * <prerm> `remove'
++#        * <old-prerm> `upgrade' <new-version>
++#        * <new-prerm> `failed-upgrade' <old-version>
++#        * <conflictor's-prerm> `remove' `in-favour' <package> <new-version>
++#        * <deconfigured's-prerm> `deconfigure' `in-favour'
++#          <package-being-installed> <version> `removing'
++#          <conflicting-package> <version>
++# for details, see http://www.debian.org/doc/debian-policy/ or
++# the debian-policy package
++
++
++case "$1" in
++    remove|upgrade|deconfigure)
++    ;;
++
++    failed-upgrade)
++    ;;
++
++    *)
++        echo "prerm called with unknown argument \`$1'" >&2
++        exit 1
++    ;;
++esac
++
++# dh_installdeb will replace this with shell code automatically
++# generated by other debhelper scripts.
++
++#DEBHELPER#
++
++exit 0
++
++
+diff -Nur omf-5.2.clean/omf-expctl/debian/rules omf-5.2/omf-expctl/debian/rules
+--- omf-5.2.clean/omf-expctl/debian/rules	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-expctl/debian/rules	2009-09-08 03:18:52.000000000 -0500
+@@ -9,8 +9,8 @@
+ # Uncomment this to turn on verbose mode.
+ #export DH_VERBOSE=1
+ 
+-VERSION=5.2
+-PKG_NAME=omf-expctl-$(VERSION)
++
++
+ 
+ configure: configure-stamp
+ configure-stamp:
+@@ -45,16 +45,12 @@
+ 	dh_installdirs
+ 
+ 	# Add here commands to install the package into debian/omf-expctl
+-	mkdir -p debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
+-	tar -C ruby -cf - --exclude='.svn' omf-expctl | tar -xf - -C debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
+-	cp ruby/omf-expctl.rb debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
+-	svn info | grep Revision | cut -d ' ' -f 2 > debian/$(PKG_NAME)/usr/share/$(PKG_NAME)/omf-expctl/REVISION
+-	tar -C etc -cf - --exclude='.svn' omf-expctl | tar -xf - -C debian/$(PKG_NAME)/etc/
+-	tar -cf - --exclude='.svn' bin | tar -xf - -C debian/$(PKG_NAME)/usr
+-	tar -C share -cf - --exclude='.svn' repository | tar -xf - -C debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
+-	
+-	mv debian/$(PKG_NAME)/etc/omf-expctl debian/$(PKG_NAME)/etc/$(PKG_NAME)
+-	for FILE in `ls debian/$(PKG_NAME)/usr/bin/`; do mv debian/$(PKG_NAME)/usr/bin/$$FILE debian/$(PKG_NAME)/usr/bin/$$FILE-$(VERSION); done;
++	tar -C ruby -cf - --exclude='.svn' omf-expctl | tar -xf - -C debian/omf-expctl/usr/lib/ruby/1.8/
++	svn info | grep Revision | cut -d ' ' -f 2 > debian/omf-expctl/usr/lib/ruby/1.8/omf-expctl/REVISION
++	cp ruby/omf-expctl.rb debian/omf-expctl/usr/lib/ruby/1.8/
++	tar -C etc -cf - --exclude='.svn' omf-expctl | tar -xf - -C debian/omf-expctl/etc/
++	tar -C share -cf - --exclude='.svn' repository | tar -xf - -C debian/omf-expctl/usr/share/omf-expctl/	
++	tar -cf - --exclude='.svn' bin | tar -xf - -C debian/omf-expctl/usr
+ 	
+ # Build architecture-independent files here.
+ binary-indep: build install
+diff -Nur omf-5.2.clean/omf-expctl/etc/omf-expctl/debug_log.xml omf-5.2/omf-expctl/etc/omf-expctl/debug_log.xml
+--- omf-5.2.clean/omf-expctl/etc/omf-expctl/debug_log.xml	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-expctl/etc/omf-expctl/debug_log.xml	2009-09-16 23:57:30.000000000 -0500
+@@ -2,7 +2,7 @@
+   <pre_config>
+     <global level="DEBUG"/>
+   </pre_config>
+-  <!-- outputters -->
++  <!-- outputers -->
+   <outputter type="StdoutOutputter" name="console" level="DEBUG"/>
+   <outputter type="OMF::ExperimentController::Web::Log::LogOutputter" name="web" level="DEBUG"/>
+ 	
+diff -Nur omf-5.2.clean/omf-expctl/etc/omf-expctl/nodehandler_log.xml omf-5.2/omf-expctl/etc/omf-expctl/nodehandler_log.xml
+--- omf-5.2.clean/omf-expctl/etc/omf-expctl/nodehandler_log.xml	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-expctl/etc/omf-expctl/nodehandler_log.xml	2009-09-16 23:57:30.000000000 -0500
+@@ -1,7 +1,7 @@
+ <log4r_config>
+   <pre_config>
+     <global level="DEBUG"/>
+-    <parameter name="serverlog" value="/tmp/omf-expctl-5.2.log"/>
++    <parameter name="serverlog" value="/tmp/omf-expctl.log"/>
+     <parameter name="logDir" value="/tmp"/>
+   </pre_config>
+   <!-- outputters -->
+diff -Nur omf-5.2.clean/omf-expctl/etc/omf-expctl/nodehandlerSlave.yaml omf-5.2/omf-expctl/etc/omf-expctl/nodehandlerSlave.yaml
+--- omf-5.2.clean/omf-expctl/etc/omf-expctl/nodehandlerSlave.yaml	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-expctl/etc/omf-expctl/nodehandlerSlave.yaml	2009-09-16 23:57:30.000000000 -0500
+@@ -25,7 +25,7 @@
+ # NOTE: use only 'spaces' to indent !
+ # ('tab' indents are not supported by the ruby yaml parser used to read this file)
+ #
+-# This is the Config file for the EC running in 'Slave Mode' on a node/resources,
++# This is the Config file for the NodeHandler4 running in 'Slave Mode' on a node/resources,
+ # which can potentially be disconnected from the Control Network
+ #
+ ---
+@@ -50,11 +50,11 @@
+       # This is the Path where NH should look for its repository of built in experiments
+       # (e.g. example experiments, maintenance experiments, etc...)
+       repository:
+-        path: ["../repository", "/usr/share/omf-expctl-5.2/repository"]
++        path: ["../repository", "/usr/share/omf-expctl/repository"]
+ 
+       # This is the Url where NH can contact the Inventory Service
+       inventory:
+-        url: 'http://localhost:5052/inventory'
++        url: 'http://localhost:5022/inventory'
+ 
+       xmpp-server:
+         host: '10.0.0.200'
+@@ -69,3 +69,4 @@
+     debug:
+       repository:
+         path: ['../repository']
++      commServer: ../c/commServer/commServer -d 4 --iface eth1
+diff -Nur omf-5.2.clean/omf-expctl/etc/omf-expctl/nodehandler.yaml omf-5.2/omf-expctl/etc/omf-expctl/nodehandler.yaml
+--- omf-5.2.clean/omf-expctl/etc/omf-expctl/nodehandler.yaml	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-expctl/etc/omf-expctl/nodehandler.yaml	2009-10-21 00:35:53.000000000 -0500
+@@ -45,11 +45,11 @@
+       # This is the Path where EC should look for its repository of built in experiments
+       # (e.g. example experiments, maintenance experiments, etc...)
+       :repository:
+-        :path: ["../repository", "/usr/share/omf-expctl-5.2/repository"]
++        :path: ["../repository", "/usr/share/omf-expctl/repository"]
+ 
+       # This is the Url where EC can contact the Inventory Service
+       :inventory:
+-        :url: 'http://localhost:5052/inventory'
++        :url: 'http://localhost:5022/inventory'
+ 
+       # This should be the IP address of the local interface that is accessible from
+       # the nodes. This address will be given to the nodes so they can retrieve
+diff -Nur omf-5.2.clean/omf-expctl/etc/omf-expctl/README.txt omf-5.2/omf-expctl/etc/omf-expctl/README.txt
+--- omf-5.2.clean/omf-expctl/etc/omf-expctl/README.txt	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-expctl/etc/omf-expctl/README.txt	2009-04-23 05:01:54.000000000 -0500
+@@ -1,14 +1,14 @@
+ POST INSTALLATION
+ -----------------
+ 
+-After installing the omf-expctl package, you have to create a link to the appropriate configuration file depending on your platform.
++After installing the nodeHandler4 packages, you have to create a link to the appropriate configuration file depending on your platform.
+ 
+ 1) At WINLAB:
+-- the correct config file is /etc/omf-expctl-5.2/nodehandler.yaml.winlab
++- the correct config file is /etc/omf-expctl/nodehandler.yaml.winlab
+ - to create the link, use the command:
+-  sudo ln -s /etc/omf-expctl-5.2/nodehandler.yaml.winlab /etc/omf-expctl-5.2/nodehandler.yaml
++  sudo ln -s /etc/omf-expctl/nodehandler.yaml.winlab /etc/omf-expctl/nodehandler.yaml
+ 
+ 2) At NICTA:
+-- the correct config file is /etc/omf-expctl-5.2/nodehandler.yaml.nicta
++- the correct config file is /etc/omf-expctl/nodehandler.yaml.nicta
+ - to create the link, use the command:
+-  sudo ln -s /etc/omf-expctl-5.2/nodehandler.yaml.nicta /etc/omf-expctl-5.2/nodehandler.yaml
++  sudo ln -s /etc/omf-expctl/nodehandler.yaml.nicta /etc/omf-expctl/nodehandler.yaml
+diff -Nur omf-5.2.clean/omf-expctl/ruby/omf-expctl/application/appDefinition.rb omf-5.2/omf-expctl/ruby/omf-expctl/application/appDefinition.rb
+--- omf-5.2.clean/omf-expctl/ruby/omf-expctl/application/appDefinition.rb	2009-12-03 00:32:21.000000000 -0600
++++ omf-5.2/omf-expctl/ruby/omf-expctl/application/appDefinition.rb	2009-09-22 23:49:49.000000000 -0500
+@@ -214,9 +214,7 @@
+   def getCommandLineArgs(bindings, appId, nodeSet)
+ 
+     cmd = []
+-    # First sort the properties according to their order (if specified in their options Hash)
+-    sortedProperties = @properties.sort {|a,b| a[1] <=> b[1]}
+-    sortedProperties.each {|a|
++    @properties.sort.each {|a|
+       name = a[0]
+       prop = a[1]
+       type = prop.type
+diff -Nur omf-5.2.clean/omf-expctl/ruby/omf-expctl/application/appProperty.rb omf-5.2/omf-expctl/ruby/omf-expctl/application/appProperty.rb
+--- omf-5.2.clean/omf-expctl/ruby/omf-expctl/application/appProperty.rb	2009-12-03 00:32:21.000000000 -0600
++++ omf-5.2/omf-expctl/ruby/omf-expctl/application/appProperty.rb	2009-09-16 23:57:30.000000000 -0500
+@@ -32,7 +32,6 @@
+ class AppProperty
+   
+   DEF_TYPE = :string
+-  DEF_LAST_ORDER = 999
+ 
+   #
+   # Unmarshall an AppProperty instance from an XML tree.
+@@ -86,9 +85,6 @@
+     @description = description
+     @mnemonic = mnemonic
+     @options = options
+-    if !@options.has_key?(:order)
+-      @options[:order] = DEF_LAST_ORDER
+-    end
+   end
+ 
+   #
+@@ -136,7 +132,7 @@
+   # [Return] 
+   #
+   def order()
+-    @options[:order] || DEF_LAST_ORDER
++    @options[:order] || 999
+   end
+ 
+   def <=>(other)
+diff -Nur omf-5.2.clean/omf-expctl/ruby/omf-expctl/handlerCommands.rb omf-5.2/omf-expctl/ruby/omf-expctl/handlerCommands.rb
+--- omf-5.2.clean/omf-expctl/ruby/omf-expctl/handlerCommands.rb	2009-11-10 00:52:06.000000000 -0600
++++ omf-5.2/omf-expctl/ruby/omf-expctl/handlerCommands.rb	2009-12-08 10:10:07.000000000 -0600
+@@ -289,15 +289,6 @@
+   Thread.new(ns) { |ns|
+     while true
+       begin
+-        # If the NodeSet is ALL (i.e. selector "*") and it is empty,
+-        # then stop the experiment!
+-        if (ns.to_s == "*") && ns.empty?
+-          info " "
+-          info "-- All the defined groups are empty (they do not include any nodes)!"
+-          info "-- Stopping the Experiment now."
+-          Experiment.done
+-          sleep 2 # otherwise this loops again before the experiment stops, annoyingly reprinting the above msg
+-        end
+         res = false
+         isUp = ns.up?
+         #MObject.debug("whenAll::internal", "Checking ", ns, " up?: ", isUp)
+@@ -473,6 +464,21 @@
+ end
+ 
+ #
++# Return the control IP of the node at the specified coordinates
++#
++# Used to be able to support nodes with DHCP control IPs
++#
++# - x = x coordinate of node
++# - y = y coordinate of node
++#
++# [Return] a string representation of the IP
++#
++def getControlIP(x, y)
++    node = Node.at!(x, y)
++    return node.getControlIP()
++end
++
++#
+ # Return the appropriate antenna (set)
+ #
+ # - x = x coordinate of the antenna 
+diff -Nur omf-5.2.clean/omf-expctl/ruby/omf-expctl/node/nodeSet.rb omf-5.2/omf-expctl/ruby/omf-expctl/node/nodeSet.rb
+--- omf-5.2.clean/omf-expctl/ruby/omf-expctl/node/nodeSet.rb	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-expctl/ruby/omf-expctl/node/nodeSet.rb	2009-10-21 00:35:53.000000000 -0500
+@@ -322,28 +322,11 @@
+   end
+ 
+   #
+-  # This method returns true if this set does not include any nodes
+-  #
+-  # [Return] true if this set is empty (no nodes associate to it)
+-  #
+-  def empty?
+-    flag = true
+-    eachNode { |n|
+-      flag = false
+-    }
+-    return flag
+-  end
+-
+-  #
+   # This method returns true if all nodes in this set are up
+   #
+   # [Return] true if all nodes in set are up
+   #
+   def up?
+-    if empty?
+-      return false
+-    end
+-    # This implicitly calls eachNode defined in BasicNodeSet!
+     return inject(true) { |flag, n|
+       #debug "Checking if #{n} is up"
+       if flag
+diff -Nur omf-5.2.clean/omf-expctl/ruby/omf-expctl/nodeHandler.rb omf-5.2/omf-expctl/ruby/omf-expctl/nodeHandler.rb
+--- omf-5.2.clean/omf-expctl/ruby/omf-expctl/nodeHandler.rb	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-expctl/ruby/omf-expctl/nodeHandler.rb	2009-10-21 00:35:53.000000000 -0500
+@@ -77,7 +77,6 @@
+   # Our Version Number
+   #
+   VERSION = OMF::Common::VERSION(__FILE__)
+-  MM_VERSION = OMF::Common::MM_VERSION()
+   VERSION_STRING = "OMF Experiment Controller #{VERSION}"
+ 
+   #
+@@ -613,7 +612,7 @@
+     else
+       # No luck, then look at our default paths...
+       path = ["../#{DEFAULT_CONFIG_PATH}/#{DEFAULT_CONFIG_FILE}",
+-              "#{DEFAULT_CONFIG_PATH}-#{MM_VERSION}/#{DEFAULT_CONFIG_FILE}",
++              "#{DEFAULT_CONFIG_PATH}#{VERSION}/#{DEFAULT_CONFIG_FILE}",
+               "#{DEFAULT_CONFIG_PATH}/#{DEFAULT_CONFIG_FILE}"]
+       path.each {|f|
+         if File.exists?(f)
+@@ -644,7 +643,7 @@
+       # No luck, then look at our default paths...
+       path =[".#{DEFAULT_CONFIG_LOG}",
+              "~/.#{DEFAULT_CONFIG_LOG}",
+-             "#{DEFAULT_CONFIG_PATH}-#{MM_VERSION}/#{DEFAULT_CONFIG_LOG}",
++             "#{DEFAULT_CONFIG_PATH}#{VERSION}/#{DEFAULT_CONFIG_LOG}",
+              "#{DEFAULT_CONFIG_PATH}/#{DEFAULT_CONFIG_LOG}"]
+       path.each {|f|
+         if File.exists?(f)
+@@ -812,14 +811,12 @@
+       begin
+         #info "Checking port #{i}..."
+         serv = TCPServer.new(i)
+-        serv.close
+-        OMF::ExperimentController::Web::start(i, {:Logger => Logger.new("/tmp/#{Experiment.ID}.w_internal.log"),
+-           :DocumentRoot => NodeHandler.WEB_ROOT(),
+-           :AccessLog => [[accLog, "%h \"%r\" %s %b"]]})
+-        confirmedPort = i
+       rescue
+         #info "Port #{i} is in use!"
++      else
++        serv.close
+         #info "Port #{i} is free!"
++        confirmedPort = i
+       end
+       break if confirmedPort != 0   
+     end
+@@ -829,6 +826,9 @@
+       exit
+     end
+         
++    OMF::ExperimentController::Web::start(confirmedPort, {:Logger => Logger.new("/tmp/#{Experiment.ID}.w_internal.log"),
++         :DocumentRoot => NodeHandler.WEB_ROOT(),
++         :AccessLog => [[accLog, "%h \"%r\" %s %b"]]})
+   end
+ end 
+ #
+diff -Nur omf-5.2.clean/omf-expctl/ruby/omf-expctl/property.rb omf-5.2/omf-expctl/ruby/omf-expctl/property.rb
+--- omf-5.2.clean/omf-expctl/ruby/omf-expctl/property.rb	2009-11-04 22:19:28.000000000 -0600
++++ omf-5.2/omf-expctl/ruby/omf-expctl/property.rb	2009-09-22 02:59:39.000000000 -0500
+@@ -123,6 +123,7 @@
+   # - unit = optional, unit for this Property
+   #
+   def setProperty(propName, value, unit = nil)
++    info "TDEBUG - SetProp - #{propName} - #{value}"
+     prop = Property.new(propName, value, unit)
+     @properties += [prop]
+   end
+diff -Nur omf-5.2.clean/omf-expctl/ruby/omf-expctl/topology.rb omf-5.2/omf-expctl/ruby/omf-expctl/topology.rb
+--- omf-5.2.clean/omf-expctl/ruby/omf-expctl/topology.rb	2009-11-15 22:53:04.000000000 -0600
++++ omf-5.2/omf-expctl/ruby/omf-expctl/topology.rb	2009-10-21 00:35:53.000000000 -0500
+@@ -484,17 +484,7 @@
+   # - x = X coordinate of added node
+   # - y = Y coordinate of added node
+   #
+-  def addNodeByCoordinate(xIn, yIn)
+-    if xIn.kind_of?(ExperimentProperty)
+-      x = xIn.value
+-    else
+-      x = xIn
+-    end
+-    if yIn.kind_of?(ExperimentProperty)
+-      y = yIn.value
+-    else
+-      y = yIn
+-    end
++  def addNodeByCoordinate(x, y)
+     begin
+       # Check if EC is in 'Slave Mode' - If so, only add the node on which this EC is running as slave
+       if NodeHandler.SLAVE_MODE() 
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/system/exp/imageNode.rb omf-5.2/omf-expctl/share/repository/system/exp/imageNode.rb
+--- omf-5.2.clean/omf-expctl/share/repository/system/exp/imageNode.rb	2009-12-07 03:28:49.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/system/exp/imageNode.rb	2009-09-16 23:57:30.000000000 -0500
+@@ -46,7 +46,7 @@
+ url = "#{OConfig[:tb_config][:default][:frisbee_url]}/checkImage?img=#{prop.image.value}"
+ response = NodeHandler.service_call(url, "Image does not exist")
+ if response.body != "OK"
+-  MObject.error("The image file '#{prop.image.value}' was not found on the AM running the frisbee service! ")
++  MObject.error("The image '#{prop.image.value}' does not exist! ")
+   MObject.error("(From FrisbeeService: #{response.body})")
+   Experiment.done
+   exit -1
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/test/app/iperf.rb omf-5.2/omf-expctl/share/repository/test/app/iperf.rb
+--- omf-5.2.clean/omf-expctl/share/repository/test/app/iperf.rb	2009-12-03 17:38:12.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/test/app/iperf.rb	1969-12-31 18:00:00.000000000 -0600
+@@ -1,89 +0,0 @@
+-#
+-# Copyright (c) 2006-2008 National ICT Australia (NICTA), Australia
+-#
+-# Copyright (c) 2004-2008 WINLAB, Rutgers University, USA
+-#
+-# Permission is hereby granted, free of charge, to any person obtaining a copy
+-# of this software and associated documentation files (the "Software"), to deal
+-# in the Software without restriction, including without limitation the rights
+-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-# copies of the Software, and to permit persons to whom the Software is
+-# furnished to do so, subject to the following conditions:
+-#
+-# The above copyright notice and this permission notice shall be included in
+-# all copies or substantial portions of the Software.
+-#
+-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-# THE SOFTWARE.
+-#
+-#
+-#
+-# Create an application representation from scratch
+-#
+-defApplication('test:app:iperf','iperf'){|a|
+-  a.name = "iperf"
+-  a.version(0, 0, 1)
+-  a.path = "/usr/bin/iperf_oml2"
+-  a.shortDescription = "Iperf traffic generator"
+-  a.description = <<TEXT
+-Iperf is a traffic generator for TCP and UDP traffic. It contains generators
+-producing various forms of packet streams and port for sending
+-these packets via various transports, such as TCP and UDP.
+-TEXT
+-
+-  # Define the properties that can be configured for this application
+-  # 
+-  # syntax: defProperty(name, description, mnemonic = nil, options = nil)
+-  #
+-  a.defProperty('udp', 'Use UDP, otherwise TCP by default', 'u',  {:order => 2, :dynamic => false, :type => :boolean})
+-  a.defProperty('client', 'Run as client', 'c',  {:order => 1, :dynamic => false, :type => :string})
+-  a.defProperty('server', 'Client/Server', 's', {:type => :boolean, :dynamic => false})
+-  a.defProperty('port', 'Sender port number', 'p', {:type => :integer, :dynamic => false})
+-  a.defProperty('window', 'TCP Send Window Size', nil, {:type => :integer, :dynamic => false})
+-  a.defProperty('time', "Duration of traffic generation(secs)", nil, {:type => :integer, :dynamice => false})
+-  a.defProperty('bandwidth', "Offered load for UDP", 'b',  {:dynamic => false, :type => :integer})
+-  a.defProperty('parallel', "Number of parallel flows", nil, {:type => :integer, :dynamic => false})
+-  a.defProperty('interval', "Interval between reports (sec)", nil, {:type => :integer, :dynamic => false})
+-
+-  # Define the Measurement Points and associated metrics that are available for this application
+-  #
+-  a.defMeasurement("TCP_Info"){ |m|
+-    m.defMetric('ID', :long)
+-    m.defMetric('Begin_interval', :float)
+-    m.defMetric('End_interval', :float)
+-    m.defMetric('Transfer', :float)
+-    m.defMetric('Bandwidth', :float)
+- }
+-  a.defMeasurement("UDP_Periodic_Info"){ |m|
+-    m.defMetric('ID', :long)
+-    m.defMetric('Begin_interval', :float)
+-    m.defMetric('End_interval', :float)
+-    m.defMetric('Transfer', :float)
+-    m.defMetric('Bandwidth', :float)
+- }
+-  a.defMeasurement("UDP_Rich_Info"){ |m|
+-    m.defMetric('ID', :long)
+-    m.defMetric('Begin_interval', :float)
+-    m.defMetric('End_interval', :float)
+-    m.defMetric('Transfer', :float)
+-    m.defMetric('Bandwidth', :float)
+-    m.defMetric('Jitter', :float)
+-    m.defMetric('Packet_Lost', :long)
+-    m.defMetric('Total_Packet', :long)
+-    m.defMetric('PLR', :float)
+- }
+-  a.defMeasurement("Peer_Info"){ |m|
+-    m.defMetric('ID', :long)
+-    m.defMetric('local_address', :string)
+-    m.defMetric('local_port', :long)
+-    m.defMetric('foreign_address', :string)
+-    m.defMetric('foreign_port', :long)
+- }
+-
+-}
+-
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/test/app/iperfr.rb omf-5.2/omf-expctl/share/repository/test/app/iperfr.rb
+--- omf-5.2.clean/omf-expctl/share/repository/test/app/iperfr.rb	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/test/app/iperfr.rb	2009-10-21 23:29:02.000000000 -0500
+@@ -0,0 +1,77 @@
++#
++# Copyright (c) 2006-2009 National ICT Australia (NICTA), Australia
++#
++# Copyright (c) 2004-2009 WINLAB, Rutgers University, USA
++#
++# Permission is hereby granted, free of charge, to any person obtaining a copy
++# of this software and associated documentation files (the "Software"), to deal
++# in the Software without restriction, including without limitation the rights
++# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++# copies of the Software, and to permit persons to whom the Software is
++# furnished to do so, subject to the following conditions:
++#
++# The above copyright notice and this permission notice shall be included in
++# all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
++# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++# THE SOFTWARE.
++#
++#
++#
++# Create an application representation from scratch
++#
++require 'omf-expctl/application/appDefinition'
++
++a = AppDefinition.create('test:app:iperfr')
++a.name = "iperfr"
++a.version(0, 0, 1)
++a.shortDescription = "Iperf traffic generator"
++a.description = <<TEXT
++Iperf is a traffic generator for TCP and UDP traffic. It contains generators
++producing various forms of packet streams and port for sending
++these packets via various transports, such as TCP and UDP.
++TEXT
++
++# defProperty(name, description, mnemonic, type, isDynamic = false, constraints = nil)
++a.defProperty('udp', 'Use UDP, otherwise TCP by default')
++a.defProperty('server', 'Client/Server')
++a.defProperty('port', 'Receiver port number')
++a.defProperty('window', 'TCP Receiver Window Size')
++a.defProperty('time', "Duration for traffic generation(seconds)")
++a.defProperty('len', "Payload Length(bytes)")
++a.defProperty('interval', "Interval between reports (sec)")
++
++a.defMeasurement("receiverport", nil, [
++  ['flow_no',:int],
++  ['throughput',:float],
++  ['jitter',:float],
++  ['packet_loss',:float]
++ ])
++a.path = "/usr/bin/iperf"
++
++if $0 == __FILE__
++  require 'stringio'
++  require 'rexml/document'
++  include REXML
++
++  sio = StringIO.new()
++  a.to_xml.write(sio, 2)
++  sio.rewind
++  puts sio.read
++
++  sio.rewind
++  doc = Document.new(sio)
++  t = AppDefinition.from_xml(doc.root)
++
++  puts
++  puts "-------------------------"
++  puts
++  t.to_xml.write($stdout, 2)
++
++end
++
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/test/app/iperfs.rb omf-5.2/omf-expctl/share/repository/test/app/iperfs.rb
+--- omf-5.2.clean/omf-expctl/share/repository/test/app/iperfs.rb	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/test/app/iperfs.rb	2009-10-21 23:29:02.000000000 -0500
+@@ -0,0 +1,80 @@
++#
++# Copyright (c) 2006-2009 National ICT Australia (NICTA), Australia
++#
++# Copyright (c) 2004-2009 WINLAB, Rutgers University, USA
++#
++# Permission is hereby granted, free of charge, to any person obtaining a copy
++# of this software and associated documentation files (the "Software"), to deal
++# in the Software without restriction, including without limitation the rights
++# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++# copies of the Software, and to permit persons to whom the Software is
++# furnished to do so, subject to the following conditions:
++#
++# The above copyright notice and this permission notice shall be included in
++# all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
++# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++# THE SOFTWARE.
++#
++#
++#
++# Create an application representation from scratch
++#
++require 'omf-expctl/application/appDefinition'
++
++a = AppDefinition.create('test:app:iperfs')
++a.name = "iperfs"
++a.version(0, 0, 1)
++a.shortDescription = "Iperf traffic generator"
++a.description = <<TEXT
++Iperf is a traffic generator for TCP and UDP traffic. It contains generators
++producing various forms of packet streams and port for sending
++these packets via various transports, such as TCP and UDP.
++TEXT
++
++# defProperty(name, description, mnemonic, type, isDynamic = false, constraints = nil)
++a.defProperty('udp', 'Use UDP, otherwise TCP by default')
++a.defProperty('client', 'Run as client')
++a.defProperty('port', 'Sender port number')
++a.defProperty('window', 'TCP Send Window Size')
++a.defProperty('len', "Payload length (bytes)")
++a.defProperty('bandwidth', "Offered load for UDP")
++a.defProperty('time', "Duration of traffic generation(secs)")
++a.defProperty('parallel', "Number of parallel flows")
++
++a.defMeasurement("senderport", nil, [
++    ['stream_no', 'int'],
++    ['pkt_seqno', 'long'],
++    ['pkt_size', 'long'],
++    ['gen_timestamp', 'long'],
++    ['tx_timestamp', 'long']
++ ])
++
++a.path = "/usr/bin/iperf"
++
++if $0 == __FILE__
++  require 'stringio'
++  require 'rexml/document'
++  include REXML
++
++  sio = StringIO.new()
++  a.to_xml.write(sio, 2)
++  sio.rewind
++  puts sio.read
++
++  sio.rewind
++  doc = Document.new(sio)
++  t = AppDefinition.from_xml(doc.root)
++
++  puts
++  puts "-------------------------"
++  puts
++  t.to_xml.write($stdout, 2)
++
++end
++
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/test/app/otg2.rb omf-5.2/omf-expctl/share/repository/test/app/otg2.rb
+--- omf-5.2.clean/omf-expctl/share/repository/test/app/otg2.rb	2009-11-02 17:57:54.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/test/app/otg2.rb	2009-09-16 23:57:30.000000000 -0500
+@@ -23,6 +23,8 @@
+ #
+ #
+ 
++require 'omf-expctl/application/appDefinition'
++
+ # This is an OMF Definition for the existing application called 'otg2'
+ # This definition will allow OMF entities to use and instrument this application
+ #
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/test/app/otr2.rb omf-5.2/omf-expctl/share/repository/test/app/otr2.rb
+--- omf-5.2.clean/omf-expctl/share/repository/test/app/otr2.rb	2009-11-02 17:57:54.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/test/app/otr2.rb	2009-09-16 23:57:30.000000000 -0500
+@@ -22,6 +22,8 @@
+ # THE SOFTWARE.
+ #
+ 
++require 'omf-expctl/application/appDefinition'
++
+ # This is an OMF Definition for the existing application called 'otr2'
+ # This definition will allow OMF entities to use and instrument this application
+ #
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/test/proto/iperftcpreceiver.rb omf-5.2/omf-expctl/share/repository/test/proto/iperftcpreceiver.rb
+--- omf-5.2.clean/omf-expctl/share/repository/test/proto/iperftcpreceiver.rb	2009-12-03 17:38:12.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/test/proto/iperftcpreceiver.rb	2009-10-21 23:29:02.000000000 -0500
+@@ -22,34 +22,40 @@
+ # THE SOFTWARE.
+ #
+ #
+-
++#
+ # Define a prototype
+ #
+-defPrototype("test:proto:iperftcpreceiver") { |p|
+-  p.name = "Iperf TCP Receiver"
+-  p.description = "Nodes which receive packets"
+-
+-  # Define the properties (and their default values) that can be configured 
+-  # for this prototype
+-  #
+-  p.defProperty('server', 'Client/Server', true)
+-  p.defProperty('port', 'Port to listen on', 5001)
+-  p.defProperty('time', 'Duration of experiment (seconds)', 10)
+-  p.defProperty('window', 'Receiver Window Size', 64000)
+-  p.defProperty('report_interval', 'Interval beween reports', 1)
+-
+-  # Define the application to be installed on this type of node,
+-  # bind the application properties to the prototype properties,
+-  # and finally, define what measurements should be collected
+-  # for each application.
+-  #
+-  p.addApplication("test:app:iperf"){|iperf|
+-    iperf.bindProperty('server')
+-    iperf.bindProperty('port','port')
+-    iperf.bindProperty('time')
+-    iperf.bindProperty('window')
+-    iperf.bindProperty('interval', 'report_interval')
+-    iperf.measure('Peer_Info', :samples => 1)
+-    iperf.measure('TCP_Info', :samples =>1)
+-  }
+-}
++
++p = Prototype.create("test:proto:iperftcpreceiver")
++p.name = "Iperf TCP Receiver"
++p.description = "Nodes which receive packets"
++p.defProperty('server', 'Client/Server')
++#p.defProperty('port', 'Port to listen on')
++p.defProperty('time', 'Duration of experiment (seconds)', 10)
++p.defProperty('window', 'Receiver Window Size', 64000)
++p.defProperty('report_interval', 'Interval beween reports', 1)
++
++
++iperfr = p.addApplication('iperfr', "test:app:iperfr")
++iperfr.bindProperty('server')
++#iperfr.bindProperty('port','port')
++iperfr.bindProperty('time')
++iperfr.bindProperty('window')
++iperfr.bindProperty('interval', 'report_interval')
++
++iperfr.addMeasurement('receiverport',  Filter::SAMPLE,
++  {Filter::SAMPLE_SIZE => 1},
++    [
++      ['flow_no'],
++      ['throughput'],
++      ['jitter'],
++      ['packet_loss']
++    ]
++)
++
++
++if $0 == __FILE__
++  p.to_xml.write($stdout, 2)
++  puts
++end
++
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/test/proto/iperftcpsender.rb omf-5.2/omf-expctl/share/repository/test/proto/iperftcpsender.rb
+--- omf-5.2.clean/omf-expctl/share/repository/test/proto/iperftcpsender.rb	2009-12-03 17:38:12.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/test/proto/iperftcpsender.rb	2009-10-21 23:29:02.000000000 -0500
+@@ -22,32 +22,38 @@
+ # THE SOFTWARE.
+ #
+ #
+-
++#
+ # Define a prototype
+ #
+-defPrototype("test:proto:iperftcpsender") { |p|
+-  p.name = "Iperf TCP Sender"
+-  p.description = "Nodes which send a stream of packets"
+ 
+-  # Define the properties (and their default values) that can be configured 
+-  # for this prototype
+-  #
+-  p.defProperty('client', 'Host to send packets to')
+-  p.defProperty('len', 'Size of packets')
+-  p.defProperty('window', 'TCP window Size (bytes)', 64000)
+-  p.defProperty('time', 'Experiment duration (sec)', 10)
++p = Prototype.create("test:proto:iperftcpsender")
++p.name = "Iperf TCP Sender"
++p.description = "Nodes which send a stream of packets"
++p.defProperty('client', 'Host to send packets to')
++#p.defProperty('port', 'Port to send packets to')
++p.defProperty('len', 'Size of packets')
++p.defProperty('window', 'TCP window Size (bytes)', 64000)
++p.defProperty('time', 'Experiment duration (sec)', 10)
+ 
+-  # Define the application to be installed on this type of node,
+-  # bind the application properties to the prototype properties,
+-  # and finally, define what measurements should be collected
+-  # for each application.
+-  #
+-  p.addApplication("test:app:iperf"){|iperf|
+-    iperf.bindProperty('client', 'client')
+-    iperf.bindProperty('time')
+-    iperf.bindProperty('window')
+-    iperf.measure('Peer_Info', :samples => 1)
+-    iperf.measure('TCP_Info', :samples =>1)
+-  }
+-}
++iperfs = p.addApplication(:iperfs, "test:app:iperfs")
++iperfs.bindProperty('client')
++iperfs.bindProperty('len')
++iperfs.bindProperty('time')
++iperfs.bindProperty('window')
++
++iperfs.addMeasurement('senderport',  Filter::SAMPLE,
++  {Filter::SAMPLE_SIZE => 1},
++  [
++    ['stream_no'],
++    ['pkt_seqno'],
++    ['pkt_size', Filter::SUM],
++    ['gen_timestamp'],
++    ['tx_timestamp']
++  ]
++)
++#
++if $0 == __FILE__
++  p.to_xml.write($stdout, 2)
++  puts
++end
+ 
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/test/proto/iperfudpreceiver.rb omf-5.2/omf-expctl/share/repository/test/proto/iperfudpreceiver.rb
+--- omf-5.2.clean/omf-expctl/share/repository/test/proto/iperfudpreceiver.rb	2009-12-03 17:38:12.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/test/proto/iperfudpreceiver.rb	2009-10-21 23:29:02.000000000 -0500
+@@ -22,34 +22,38 @@
+ # THE SOFTWARE.
+ #
+ #
+-
++#
+ # Define a prototype
+ #
+-defPrototype("test:proto:iperfudpreceiver") { |p|
+-  p.name = "Iperf UDP Receiver"
+-  p.description = "Nodes which receive packets"
+ 
+-  # Define the properties (and their default values) that can be configured 
+-  # for this prototype
+-  #
+-  p.defProperty('use_udp', 'Protocol to use', true)
+-  p.defProperty('server', 'Client/Server', true)
+-  p.defProperty('port', 'Port to listen on')
+-  p.defProperty('time', 'Duration of experiment (seconds)', 10)
+-  p.defProperty('report_interval', 'Interval between bandwidth reports', 1)
+ 
+-  # Define the application to be installed on this type of node,
+-  # bind the application properties to the prototype properties,
+-  # and finally, define what measurements should be collected
+-  # for each application.
+-  #
+-  p.addApplication("test:app:iperf"){|iperf| 
+-    iperf.bindProperty('udp','use_udp')
+-    iperf.bindProperty('server')
+-    iperf.bindProperty('port','port')
+-    iperf.bindProperty('time')
+-    iperf.bindProperty('interval','report_interval')
+-    iperf.measure('Peer_Info', :samples => 1)
+-    iperf.measure('UDP_Rich_Info', :samples =>1)
+-  }
++p = Prototype.create("test:proto:iperfudpreceiver")
++p.name = "Iperf UDP Receiver"
++p.description = "Nodes which receive packets"
++p.defProperty('use_udp', 'Protocol to use')
++p.defProperty('server', 'Client/Server')
++p.defProperty('port', 'Port to listen on')
++p.defProperty('time', 'Duration of experiment (seconds)', 10)
++#p.defProperty('len', 'Payload length', 512)
++p.defProperty('report_interval', 'Interval between bandwidth reports', 1)
++p.defProperty('omlServer', 'Contact details for the oml collection server', "tcp:10.0.1.200:3003") #"tcp:#{OmlApp.getServerAddr}:#{OmlApp.getServerPort}")
++p.defProperty('id', 'ID for this oml client', "#{Experiment.ID}")
++p.defProperty('expId', 'ID for this experiment', "#{Experiment.ID}")
++
++p.addApplication("test:app:iperfr"){|iperfr| 
++iperfr.bindProperty('udp','use_udp')
++iperfr.bindProperty('server')
++iperfr.bindProperty('port','port')
++iperfr.bindProperty('time')
++#iperfr.bindProperty('len')
++iperfr.bindProperty('interval','report_interval')
++iperfr.bindProperty('oml-server', 'omlServer')
++iperfr.bindProperty('oml-id', 'id')
++iperfr.bindProperty('oml-exp-id', 'expId')
+ }
++
++if $0 == __FILE__
++  p.to_xml.write($stdout, 2)
++  puts
++end
++
+diff -Nur omf-5.2.clean/omf-expctl/share/repository/test/proto/iperfudpsender.rb omf-5.2/omf-expctl/share/repository/test/proto/iperfudpsender.rb
+--- omf-5.2.clean/omf-expctl/share/repository/test/proto/iperfudpsender.rb	2009-12-03 17:38:12.000000000 -0600
++++ omf-5.2/omf-expctl/share/repository/test/proto/iperfudpsender.rb	2009-10-21 23:29:02.000000000 -0500
+@@ -22,35 +22,36 @@
+ # THE SOFTWARE.
+ #
+ #
+-
++#
+ # Define a prototype
+ #
+ defPrototype("test:proto:iperfudpsender") { |p|
+-  p.name = "Iperf UDP Sender"
+-  p.description = "Nodes which send a stream of packets"
++p.name = "Iperf UDP Sender"
++p.description = "Nodes which send a stream of packets"
++p.defProperty('use_udp', 'Protocol to use', false)
++p.defProperty('client', 'Host to send packets to', "localhost")
++p.defProperty('sender_rate', 'Number of bits per second', 100000000)
++p.defProperty('port', 'Port to send packets to', 5001)
++#p.defProperty('len', 'Size of packets')
++p.defProperty('time', 'Experiment duration (sec)', 10)
++p.defProperty('omlServer', 'Contact details for the oml collection server', "tcp:10.0.1.200:3003")#"tcp:#{OmlApp.getServerAddr}:#{OmlApp.getServerPort}")
++p.defProperty('id', 'ID for this oml client', "#{Experiment.ID}")
++p.defProperty('expId', 'ID for this experiment', "#{Experiment.ID}")
+ 
+-  # Define the properties (and their default values) that can be configured 
+-  # for this prototype
+-  #
+-  p.defProperty('use_udp', 'Protocol to use', true)
+-  p.defProperty('client', 'Host to send packets to', "localhost")
+-  p.defProperty('sender_rate', 'Number of bits per second', 25500000)
+-  p.defProperty('port', 'Port to send packets to', 5001)
+-  p.defProperty('time', 'Experiment duration (sec)', 10)
++p.addApplication("test:app:iperfs"){|iperfs|
++iperfs.bindProperty('Audp','use_udp')
++iperfs.bindProperty('Aclient', 'client')
++iperfs.bindProperty('bandwidth','sender_rate')
++#iperfs.bindProperty('len')
++iperfs.bindProperty('time')
++iperfs.bindProperty('port')
++iperfs.bindProperty('oml-server', 'omlServer')
++iperfs.bindProperty('oml-id', 'id')
++iperfs.bindProperty('oml-exp-id', 'expId')
+ 
+-  # Define the application to be installed on this type of node,
+-  # bind the application properties to the prototype properties,
+-  # and finally, define what measurements should be collected
+-  # for each application.
+-  #
+-  p.addApplication("test:app:iperf"){|iperf|
+-    iperf.bindProperty('udp','use_udp')
+-    iperf.bindProperty('client', 'client')
+-    iperf.bindProperty('bandwidth','sender_rate')
+-    iperf.bindProperty('time')
+-    iperf.bindProperty('port')
+-    iperf.measure('Peer_Info', :samples => 1)
+-    iperf.measure('UDP_Periodic_Info', :samples =>1)
+-    iperf.measure('UDP_Rich_Info', :samples =>1)
+-  }
++}
++if $0 == __FILE__
++  p.to_xml.write($stdout, 2)
++  puts
++end
+ }
+diff -Nur omf-5.2.clean/omf-resctl/debian/changelog omf-5.2/omf-resctl/debian/changelog
+--- omf-5.2.clean/omf-resctl/debian/changelog	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/debian/changelog	2009-10-16 04:52:18.000000000 -0500
+@@ -1,5 +1,49 @@
+-omf-resctl-5.2 (1) stable; urgency=low
++omf-resctl (5.2-1) stable; urgency=low
+ 
+-  * Initial release.
++  * first OMF 5.2 release package
++  * supports new saveimage gridservice
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 16 Oct 2009 20:31:08 +1100
++
++omf-resctl (5.0-6) stable; urgency=low
++
++  * added XMPP keepalive support
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 25 Sep 2009 16:26:31 +1000
++
++omf-resctl (5.0-5) stable; urgency=low
++
++  * fixed omf tell
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Thu, 17 Sep 2009 13:43:13 +1000
++
++omf-resctl (5.0-4) stable; urgency=low
++
++  * fixed logrotation issue
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Tue, 15 Sep 2009 16:41:21 +1000
++
++omf-resctl (5.0-3) stable; urgency=low
++
++  * changed distribution to stable
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Mon, 07 Sep 2009 15:23:17 +1000
++
++omf-resctl (5.0-1ubuntu2) testing; urgency=low
++
++  * Testing XMPP + Latest refactoring from Max 
++
++ --  <thierry@sandbox1.dynhost.nicta.com.au>  Wed, 02 Sep 2009 09:01:36 +1000
++
++omf-resctl (5.0-1ubuntu1) hardy; urgency=low
++
++  * XMPP improvements
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Mon, 03 Aug 2009 14:26:30 +1000
++
++omf-resctl (5.0-1) testing; urgency=low
++
++  * Initial release
++
++ -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Fri, 17 Apr 2009 18:00:40 +1000
+ 
+- -- Christoph Dwertmann <christoph.dwertmann@nicta.com.au>  Mon, 09 Nov 2009 15:00:38 +1100
+diff -Nur omf-5.2.clean/omf-resctl/debian/control omf-5.2/omf-resctl/debian/control
+--- omf-5.2.clean/omf-resctl/debian/control	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/debian/control	2009-09-16 01:11:07.000000000 -0500
+@@ -1,13 +1,13 @@
+-Source: omf-resctl-5.2
++Source: omf-resctl
+ Section: omf
+ Priority: extra
+ Maintainer: Christoph Dwertmann <christoph.dwertmann@nicta.com.au>
+ Build-Depends: debhelper (>= 5)
+ Standards-Version: 3.7.2
+ 
+-Package: omf-resctl-5.2
+-Architecture: all
+-Depends: wget, ruby1.8, omf-common-5.2, wireless-tools
++Package: omf-resctl
++Architecture: any
++Depends: wget, ruby1.8, omf-common, wireless-tools
+ Description: OMF Resource Controller
+  Client application for the OMF Experiment Controller.
+ 
+diff -Nur omf-5.2.clean/omf-resctl/debian/dirs omf-5.2/omf-resctl/debian/dirs
+--- omf-5.2.clean/omf-resctl/debian/dirs	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/debian/dirs	2009-04-23 03:20:34.000000000 -0500
+@@ -1,3 +1,3 @@
+-usr/share
++usr/lib/ruby/1.8
+ etc
+ usr/sbin
+diff -Nur omf-5.2.clean/omf-resctl/debian/init.d omf-5.2/omf-resctl/debian/init.d
+--- omf-5.2.clean/omf-resctl/debian/init.d	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/debian/init.d	2009-05-27 04:58:04.000000000 -0500
+@@ -15,7 +15,7 @@
+ # Description:       Enable service provided by daemon.
+ ### END INIT INFO
+ 
+-NAME=omf-resctl-5.2
++NAME=omf-resctl
+ 
+ test -x /usr/sbin/$NAME || exit 0
+ 
+diff -Nur omf-5.2.clean/omf-resctl/debian/omf-resctl-5.2.logrotate omf-5.2/omf-resctl/debian/omf-resctl-5.2.logrotate
+--- omf-5.2.clean/omf-resctl/debian/omf-resctl-5.2.logrotate	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/debian/omf-resctl-5.2.logrotate	1969-12-31 18:00:00.000000000 -0600
+@@ -1,9 +0,0 @@
+-/var/log/omf-resctl-5.2.log {
+-	weekly
+-	rotate 4
+-	missingok
+-	notifempty
+-	compress
+-	copytruncate
+-}
+-
+diff -Nur omf-5.2.clean/omf-resctl/debian/omf-resctl.logrotate omf-5.2/omf-resctl/debian/omf-resctl.logrotate
+--- omf-5.2.clean/omf-resctl/debian/omf-resctl.logrotate	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-resctl/debian/omf-resctl.logrotate	2009-09-14 02:45:05.000000000 -0500
+@@ -0,0 +1,9 @@
++/var/log/omf-resctl.log {
++	weekly
++	rotate 4
++	missingok
++	notifempty
++	compress
++	copytruncate
++}
++
+diff -Nur omf-5.2.clean/omf-resctl/debian/omf-resctl.ssh-auto-connect.init omf-5.2/omf-resctl/debian/omf-resctl.ssh-auto-connect.init
+--- omf-5.2.clean/omf-resctl/debian/omf-resctl.ssh-auto-connect.init	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-resctl/debian/omf-resctl.ssh-auto-connect.init	2009-12-08 23:10:21.000000000 -0600
+@@ -0,0 +1,139 @@
++#! /bin/sh
++### BEGIN INIT INFO
++# Provides:          ssh-auto-connect
++# Required-Start:    $syslog $ssh
++# Required-Stop:     $syslog $ssh
++# Default-Start:     2 3 4 5
++# Default-Stop:      0 1 6
++# Short-Description: Initscript for ssh-auto-connect
++# Description:       Connects to the wireless gateway
++### END INIT INFO
++
++# Author: Dan McNulty
++
++# Do NOT "set -e"
++
++# PATH should only include /usr/* if it runs after the mountnfs.sh script
++PATH=/sbin:/usr/sbin:/bin:/usr/bin
++DESC="SSH Auto Connect"
++NAME=ssh-auto-connect
++DAEMON=/usr/sbin/$NAME
++DAEMON_ARGS=""
++PIDFILE=/var/run/$NAME.pid
++SCRIPTNAME=/etc/init.d/$NAME
++IF=eth0 # XXX change to wlan0 if no longer using a bridged setup
++
++# Exit if the package is not installed
++[ -x "$DAEMON" ] || exit 0
++
++# Read configuration variable file if it is present
++[ -r /etc/default/$NAME ] && . /etc/default/$NAME
++
++# Load the VERBOSE setting and other rcS variables
++. /lib/init/vars.sh
++
++# Define LSB log_* functions.
++# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
++. /lib/lsb/init-functions
++
++#
++# Function that starts the daemon/service
++#
++do_start()
++{
++	# XXX uncomment if IF=wlan0
++	# /sbin/ifconfig $IF down
++	# /sbin/ifconfig $IF up || return 2
++	# /sbin/iwconfig $IF essid tsunami || return 2
++	# /sbin/ifconfig $IF up || return 2
++	# /sbin/dhclient3 $IF
++
++	# Return
++	#   0 if daemon has been started
++	#   1 if daemon was already running
++	#   2 if daemon could not be started
++	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
++		|| return 1
++	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- \
++		$DAEMON_ARGS \
++		|| return 2
++	# Add code here, if necessary, that waits for the process to be ready
++	# to handle requests from services started subsequently which depend
++	# on this one.  As a last resort, sleep for some time.
++}
++
++#
++# Function that stops the daemon/service
++#
++do_stop()
++{
++	# Return
++	#   0 if daemon has been stopped
++	#   1 if daemon was already stopped
++	#   2 if daemon could not be stopped
++	#   other if a failure occurred
++	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
++	RETVAL="$?"
++	[ "$RETVAL" = 2 ] && return 2
++	# Wait for children to finish too if this is a daemon that forks
++	# and if the daemon is only ever run from this initscript.
++	# If the above conditions are not satisfied then add some other code
++	# that waits for the process to drop all resources that could be
++	# needed by services started subsequently.  A last resort is to
++	# sleep for some time.
++	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
++	[ "$?" = 2 ] && return 2
++	# Many daemons don't delete their pidfiles when they exit.
++	rm -f $PIDFILE
++	return "$RETVAL"
++}
++
++case "$1" in
++  start)
++	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
++	do_start
++	case "$?" in
++		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
++		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
++	esac
++	;;
++  stop)
++	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
++	do_stop
++	case "$?" in
++		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
++		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
++	esac
++	;;
++  status)
++       status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
++       ;;
++  restart|force-reload)
++	#
++	# If the "reload" option is implemented then remove the
++	# 'force-reload' alias
++	#
++	log_daemon_msg "Restarting $DESC" "$NAME"
++	do_stop
++	case "$?" in
++	  0|1)
++		do_start
++		case "$?" in
++			0) log_end_msg 0 ;;
++			1) log_end_msg 1 ;; # Old process is still running
++			*) log_end_msg 1 ;; # Failed to start
++		esac
++		;;
++	  *)
++	  	# Failed to stop
++		log_end_msg 1
++		;;
++	esac
++	;;
++  *)
++	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
++	exit 3
++	;;
++esac
++
++:
+diff -Nur omf-5.2.clean/omf-resctl/debian/rules omf-5.2/omf-resctl/debian/rules
+--- omf-5.2.clean/omf-resctl/debian/rules	2009-11-16 03:03:11.000000000 -0600
++++ omf-5.2/omf-resctl/debian/rules	2009-12-08 23:10:21.000000000 -0600
+@@ -9,7 +9,8 @@
+ # Uncomment this to turn on verbose mode.
+ #export DH_VERBOSE=1
+ 
+-PKG_NAME=omf-resctl-5.2
++
++
+ 
+ configure: configure-stamp
+ configure-stamp:
+@@ -43,15 +44,11 @@
+ 	dh_clean -k 
+ 	dh_installdirs
+ 
+-	# Add here commands to install the package into debian/.
+-	mkdir -p debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
+-	tar -C ruby -cf - --exclude='.svn' omf-resctl | tar -xf - -C debian/$(PKG_NAME)/usr/share/$(PKG_NAME)
+-	svn info | grep Revision | cut -d ' ' -f 2 > debian/$(PKG_NAME)/usr/share/$(PKG_NAME)/omf-resctl/omf_agent/REVISION
+-	tar -C etc -cf - --exclude='.svn' omf-resctl | tar -xf - -C debian/$(PKG_NAME)/etc/
+-	tar -cf - --exclude='.svn' sbin | tar -xf - -C debian/$(PKG_NAME)/usr
+-	
+-	mv debian/$(PKG_NAME)/etc/omf-resctl debian/$(PKG_NAME)/etc/$(PKG_NAME)
+-	mv debian/$(PKG_NAME)/usr/sbin/omf-resctl debian/$(PKG_NAME)/usr/sbin/$(PKG_NAME)
++	# Add here commands to install the package into debian/omf-resctl
++	tar -C ruby -cf - --exclude='.svn' omf-resctl | tar -xf - -C debian/omf-resctl/usr/lib/ruby/1.8/
++	svn info | grep Revision | cut -d ' ' -f 2 > debian/omf-resctl/usr/lib/ruby/1.8/omf-resctl/REVISION
++	tar -C etc -cf - --exclude='.svn' omf-resctl | tar -xf - -C debian/omf-resctl/etc/
++	tar -cf - --exclude='.svn' sbin | tar -xf - -C debian/omf-resctl/usr
+ 	
+ # Build architecture-independent files here.
+ binary-indep: build install
+@@ -73,6 +70,7 @@
+ #	dh_installmime
+ #	dh_python
+ 	dh_installinit
++	dh_installinit --name=ssh-auto-connect
+ #	dh_installcron
+ #	dh_installinfo
+ 	dh_installman
+diff -Nur omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagent_log.xml omf-5.2/omf-resctl/etc/omf-resctl/nodeagent_log.xml
+--- omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagent_log.xml	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/etc/omf-resctl/nodeagent_log.xml	2009-09-16 23:57:30.000000000 -0500
+@@ -1,7 +1,7 @@
+ <log4r_config>
+   <pre_config>
+     <global level="DEBUG"/>
+-    <parameter name="logFile" value="/var/log/omf-resctl-5.2.log"/>
++    <parameter name="logFile" value="/var/log/omf-resctl.log"/>
+   </pre_config>
+   <!-- outputers -->
+   <outputter type="FileOutputter" name="log" level="DEBUG">
+diff -Nur omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagentSlave_log.xml omf-5.2/omf-resctl/etc/omf-resctl/nodeagentSlave_log.xml
+--- omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagentSlave_log.xml	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/etc/omf-resctl/nodeagentSlave_log.xml	2009-09-16 23:57:30.000000000 -0500
+@@ -1,7 +1,7 @@
+ <log4r_config>
+   <pre_config>
+     <global level="DEBUG"/>
+-    <parameter name="logFile" value="/var/log/omf-resctl-5.2.slave.log"/>
++    <parameter name="logFile" value="/var/log/omf-resctl.slave.log"/>
+   </pre_config>
+   <!-- outputers -->
+   <outputter type="FileOutputter" name="log" level="DEBUG">
+diff -Nur omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagent.yaml omf-5.2/omf-resctl/etc/omf-resctl/nodeagent.yaml
+--- omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagent.yaml	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/etc/omf-resctl/nodeagent.yaml	2009-12-06 23:58:46.000000000 -0600
+@@ -65,5 +65,8 @@
+     # To enable/disable ii) uncomment/comment the following lines
+     server_port: 9026
+     # local_if: Control Interface used with TCPServer Comm.
+-    local_if: control
+-    xmpp_server: 10.0.0.200
++    local_if: eth0
++    xmpp_server: 192.168.3.1
++    # This information is used to identify the node when it doesn't have a static IP
++    discover_pubsub_node: discoverd
++    discover_if: eth0
+diff -Nur omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagent.yaml.nicta omf-5.2/omf-resctl/etc/omf-resctl/nodeagent.yaml.nicta
+--- omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagent.yaml.nicta	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/etc/omf-resctl/nodeagent.yaml.nicta	2009-08-04 02:18:34.000000000 -0500
+@@ -65,5 +65,5 @@
+     # To enable/disable ii) uncomment/comment the following lines
+     server_port: 9026
+     # local_if: Control Interface used with TCPServer Comm.
+-    local_if: control
++    local_if: eth1
+     xmpp_server: 10.0.0.200
+diff -Nur omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagent.yaml.wisc omf-5.2/omf-resctl/etc/omf-resctl/nodeagent.yaml.wisc
+--- omf-5.2.clean/omf-resctl/etc/omf-resctl/nodeagent.yaml.wisc	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-resctl/etc/omf-resctl/nodeagent.yaml.wisc	2009-12-06 23:58:46.000000000 -0600
+@@ -0,0 +1,72 @@
++#
++# Copyright (c) 2006-2009 National ICT Australia (NICTA), Australia
++#
++# Copyright (c) 2004-2009 WINLAB, Rutgers University, USA
++#
++# Permission is hereby granted, free of charge, to any person obtaining a copy
++# of this software and associated documentation files (the "Software"), to deal
++# in the Software without restriction, including without limitation the rights
++# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++# copies of the Software, and to permit persons to whom the Software is
++# furnished to do so, subject to the following conditions:
++#
++# The above copyright notice and this permission notice shall be included in
++# all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
++# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++# THE SOFTWARE.
++#
++#
++# NOTE: use only 'spaces' to indent !
++# ('tab' indents are not supported by the ruby yaml parser used to read this file)
++#
++# This is the Config file for the NodeAgent4 on the NICTA platform
++#
++---
++nodeagent:
++  # Communication settings 
++  comm:
++
++    # How many seconds can we go without a message from the node handler
++    # before we assume we have lost connectivity and need to reset
++    handler_timeout: 40
++  
++    # Number of consecutive handler timeouts before a 'handler lost'
++    # will be declared.
++    timeout_count: 2
++  
++    # Number of seconds to wait between consecutive RETRY requests
++    retry_interval: 3
++  
++    # Number of seconds between consecutive HEARTBEAT messages
++    heartbeat_interval: 10
++  
++    # Pause between resending previous messages
++    resend_interval: 0.1
++  
++    # Currently the node Agent has the choice between two types 
++    # of Communicators to use to talk to the node Handler: 
++    # i)  Multicast Communicator
++    # ii) TCP Server Communicator
++    #
++    # To enable/disable i) uncomment/comment the following lines
++    #
++    #listen_addr: 224.4.0.1
++    #listen_port: 9006
++    #handler_addr: 224.4.0.2
++    #handler_port: 9002
++    #local_if: eth1 # Control Interface used with Multicast Comm. 
++    #
++    # To enable/disable ii) uncomment/comment the following lines
++    server_port: 9026
++    # local_if: Control Interface used with TCPServer Comm.
++    local_if: eth0
++    xmpp_server: 192.168.3.1
++    # This information is used to identify the node when it doesn't have a static IP
++    discover_pubsub_node: discoverd
++    discover_if: eth0
+diff -Nur omf-5.2.clean/omf-resctl/ruby/omf-resctl/autoSSH.rb omf-5.2/omf-resctl/ruby/omf-resctl/autoSSH.rb
+--- omf-5.2.clean/omf-resctl/ruby/omf-resctl/autoSSH.rb	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-resctl/ruby/omf-resctl/autoSSH.rb	2009-12-08 19:28:11.000000000 -0600
+@@ -0,0 +1,24 @@
++require 'net/ssh'
++
++begin
++    ssh = Net::SSH.start("wireless-gw.cs.wisc.edu", "user", { :password => "password" })
++
++    ssh.open_channel do |ch|
++	# Enable terminal emulation
++	ch.request_pty do |ch, success|
++	    if !success
++		puts "Failed to get pseudo-tty"
++		exit 1
++	    end
++	end
++
++	# Get the wireless gateway to send the login message
++	ch.send_channel_request "shell"
++
++	ch.on_close { puts "Failure: channel closed" }
++    end
++    
++    ssh.loop { true }
++rescue Net::SSH::AuthenticationFailed => ex
++    puts "Authentication Failed: #{ex}"
++end
+diff -Nur omf-5.2.clean/omf-resctl/ruby/omf-resctl/omf_agent/agentCommands.rb omf-5.2/omf-resctl/ruby/omf-resctl/omf_agent/agentCommands.rb
+--- omf-5.2.clean/omf-resctl/ruby/omf-resctl/omf_agent/agentCommands.rb	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/ruby/omf-resctl/omf_agent/agentCommands.rb	2009-10-16 04:52:18.000000000 -0500
+@@ -41,8 +41,6 @@
+ 
+   # Version of the communication protocol between the NH and the NAs
+   PROTOCOL_VERSION = "4.2"
+-  
+-  OMF_MM_VERSION = OMF::Common::MM_VERSION()
+ 
+   # TODO:
+   # For GEC4 demo we use these Constant values.
+@@ -55,12 +53,12 @@
+   SLAVE_RESCTL_ID = "SLAVE-RESOURCE-CTL"
+   SLAVE_RESCTL_LISTENIF = "lo" # Slave Agent listens only on localhost interface
+   SLAVE_RESCTL_LISTENPORT = 9026
+-  SLAVE_RESCTL_CMD = "sudo /usr/sbin/omf-resctl-#{OMF_MM_VERSION}"
+-  SLAVE_RESCTL_LOG = "/etc/omf-resctl-#{OMF_MM_VERSION}/nodeagentSlave_log.xml"
++  SLAVE_RESCTL_CMD = "sudo /usr/sbin/omf-resctl"
++  SLAVE_RESCTL_LOG = "/etc/omf-resctl/nodeagentSlave_log.xml"
+   # Slave Experimet Controller (aka NodeHandler)
+   SLAVE_EXPCTL_ID = "SLAVE-EXP-CTL"
+-  SLAVE_EXPCTL_CMD = "/usr/bin/omf-#{OMF_MM_VERSION} exec"
+-  SLAVE_EXPCTL_CFG = "/etc/omf-expctl-#{OMF_MM_VERSION}/nodehandlerSlave.yaml"
++  SLAVE_EXPCTL_CMD = "/usr/bin/omf exec"
++  SLAVE_EXPCTL_CFG = "/etc/omf-expctl/nodehandlerSlave.yaml"
+   # Proxy OML Collection Server
+   OML_PROXY_ID = "PROXY-OML-SERVER"
+   OML_PROXY_CMD = "/usr/bin/oml2-proxy-server"
+@@ -440,7 +438,7 @@
+   def AgentCommands.RESTART(agent, argArray)
+     agent.communicator.quit
+     ExecApp.killAll
+-    system("/etc/init.d/omf-resctl-#{OMF_MM_VERSION} restart")
++    system('/etc/init.d/omf-resctl restart')
+     # will be killed by now :(
+   end
+ 
+diff -Nur omf-5.2.clean/omf-resctl/ruby/omf-resctl/omf_agent/agentPubSubCommunicator.rb omf-5.2/omf-resctl/ruby/omf-resctl/omf_agent/agentPubSubCommunicator.rb
+--- omf-5.2.clean/omf-resctl/ruby/omf-resctl/omf_agent/agentPubSubCommunicator.rb	2009-09-25 00:42:56.000000000 -0500
++++ omf-5.2/omf-resctl/ruby/omf-resctl/omf_agent/agentPubSubCommunicator.rb	2009-12-07 01:08:31.000000000 -0600
+@@ -35,6 +35,8 @@
+ #
+ require "omf-common/omfPubSubService"
+ require 'omf-common/lineSerializer'
++require 'omf-common/ifconfig'
++require 'timeout'
+ 
+ #
+ # This class defines a Communicator entity using the Publish/Subscribe paradigm.
+@@ -47,6 +49,8 @@
+   DOMAIN = "Domain"
+   SYSTEM = "System"
+   SESSION = "Session"
++  DISCOVER_TIMEOUT = 30
++  DISCOVER_RETRY = 3
+ 
+   include Singleton
+   @@instantiated = false
+@@ -140,6 +144,67 @@
+     # Set some internal attributes...
+     @@IPaddr = getControlAddr()
+     
++    # Here, need to login Jabber server as the discovery user name
++    # and tell the aggregate manager the control IP for this node
++    begin
++	# Create the Service Helper for the discover user
++	@@service = OmfPubSubService.new(@@IPaddr, "123", jid_suffix)
++   
++	# Set up the event callback
++	discQueue = Queue.new
++	@@service.add_event_callback { |event|
++	    discQueue << event
++	}
++
++	discover_pubsub_node = NodeAgent.instance.config('comm')['discover_pubsub_node']
++	full_path = "/#{DOMAIN}/#{SYSTEM}/#{discover_pubsub_node}"
++	@@service.join_pubsub_node(full_path)
++
++	# Send the initialization command -- see discoveryCommunicator in omf-aggmgr for format
++	cfg = IfconfigWrapper.new.parse
++	mac_addr = cfg[NodeAgent.instance.config('comm')['discover_if']].mac
++	new_ip = @@IPaddr
++	
++	completeDiscovery = false
++	retryCount = 0
++	while !completeDiscovery 
++	    begin
++		status = Timeout::timeout(DISCOVER_TIMEOUT) {
++		    message = "DISCOVER #{mac_addr} #{new_ip}"
++		    item = Jabber::PubSub::Item.new
++		    msg = Jabber::Message.new(nil, message)
++		    item.add(msg)
++		    @@service.publish_to_node(full_path, item)
++		    debug "Sending IP to aggmgr: #{message}"
++
++		    # Receive ACK from initialization command
++		    while event = discQueue.pop
++			response = event.first_element("items")\
++					.first_element("item")\
++					.first_element("message")\
++					.first_element("body").text
++			if (response == "OK #{item.id} #{mac_addr} #{new_ip}") 
++			    completeDiscovery = true
++			    break
++			end
++		    end
++		}
++	    rescue Timeout::Error => terr
++		# Ignore exception and retry
++		retryCount += 1
++		if (retryCount >= 3)
++		    raise terr
++		end
++	    end
++	end
++	
++	# End the discover session
++	@@service.quit
++    rescue Exception => ex
++	error "Failed to complete node discovery with aggmgr '#{jid_suffix}' - Error: '#{ex}'"
++	exit 1
++    end
++
+     # Create a Service Helper to interact with the PubSub Server
+     begin
+       @@service = OmfPubSubService.new(@@IPaddr, "123", jid_suffix)
+diff -Nur omf-5.2.clean/omf-resctl/ruby/omf-resctl/omf_agent/nodeAgent.rb omf-5.2/omf-resctl/ruby/omf-resctl/omf_agent/nodeAgent.rb
+--- omf-5.2.clean/omf-resctl/ruby/omf-resctl/omf_agent/nodeAgent.rb	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/ruby/omf-resctl/omf_agent/nodeAgent.rb	2009-11-20 00:01:46.000000000 -0600
+@@ -54,7 +54,6 @@
+   # Our Version Number
+   #
+   VERSION = OMF::Common::VERSION(__FILE__)
+-  OMF_MM_VERSION = OMF::Common::MM_VERSION()
+   VERSION_STRING = "OMF Resource Controller #{VERSION}"
+   
+   # File containing image name
+@@ -362,7 +361,7 @@
+ 
+     cfgFile = nil
+     @interactive = false
+-    @logConfigFile = ENV['NODE_AGENT_LOG'] || "/etc/omf-resctl-#{OMF_MM_VERSION}/nodeagent_log.xml"
++    @logConfigFile = ENV['NODE_AGENT_LOG'] || "/etc/omf-resctl/nodeagent_log.xml"
+ 
+     # --listen-addr --listen-port --handler-addr --handler-port
+     opts = OptionParser.new
+@@ -444,7 +443,7 @@
+     # read optional config file
+     if cfgFile.nil?
+       name = "nodeagent.yaml"
+-      path = ["../etc/omf-resctl/#{name}", "/etc/omf-resctl-#{OMF_MM_VERSION}/#{name}"]
++      path = ["../etc/omf-resctl/#{name}", "/etc/omf-resctl/#{name}"]
+       cfgFile = path.detect {|f|
+         File.readable?(f)
+       }
+@@ -589,6 +588,14 @@
+   end
+ }
+ 
++IO.popen("lsusb | grep 'Atheros' | wc -l") {|p|
++  if p.gets.to_i > 0
++    require 'omf-resctl/omf_driver/atherosUSB'
++    MObject.info "Have Atheros USB card"
++    AgentCommands::DEV_MAPPINGS['net/w0'] = AtherosDevice.new('net/w0', 'wlan0')
++  end
++}
++
+ #
+ # Execution Entry point 
+ #
+diff -Nur omf-5.2.clean/omf-resctl/ruby/omf-resctl/omf_driver/atherosUSB.rb omf-5.2/omf-resctl/ruby/omf-resctl/omf_driver/atherosUSB.rb
+--- omf-5.2.clean/omf-resctl/ruby/omf-resctl/omf_driver/atherosUSB.rb	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-resctl/ruby/omf-resctl/omf_driver/atherosUSB.rb	2009-11-20 00:01:48.000000000 -0600
+@@ -0,0 +1,104 @@
++#
++# Copyright (c) 2006-2009 National ICT Australia (NICTA), Australia
++#
++# Copyright (c) 2004-2009 WINLAB, Rutgers University, USA
++#
++# Permission is hereby granted, free of charge, to any person obtaining a copy
++# of this software and associated documentation files (the "Software"), to deal
++# in the Software without restriction, including without limitation the rights
++# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++# copies of the Software, and to permit persons to whom the Software is
++# furnished to do so, subject to the following conditions:
++#
++# The above copyright notice and this permission notice shall be included in
++# all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
++# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++# THE SOFTWARE.
++#
++#
++# = atherosUSB.rb
++#
++# == Description
++#
++# This file defines the class AtherosUSBDevice which is a sub-class of WirelessDevice.
++#
++require 'omf-resctl/omf_driver/wireless'
++
++#
++# This class represents an AtherosUSB device
++#
++class AtherosUSBDevice < WirelessDevice
++
++  #
++  # Create and set up a new IntelDevice instance
++  #
++  def initialize(logicalName, deviceName)
++    super(logicalName, deviceName)
++    @driver = 'ar5523'
++  end
++
++  #
++  # Return the specific command required to configure a given property of this device.
++  # When a property does not exist for this device, check if it does for its super-class.
++  #
++  # - prop = the property to configure
++  # - value = the value to configure that property to
++  #
++  def getConfigCmd(prop, value)
++
++    case prop
++      when 'type'
++        # 'value' defines type of operation
++        p = case
++          when value == 'a' : 1
++          when value == 'b' : 2
++          when value == 'g' : 3
++          else
++            raise "Unknown type. Should be 'a', 'b', or 'g'."
++        end
++        return "iwpriv #{@deviceName} set_mode #{p}"
++
++      when "mode"
++        # 'value' defines mode of operation
++        p = case
++          when value == 'Managed' : 'managed'
++          when value == 'managed' : 'managed'
++          when value == 'Master' : 'master'
++          when value == 'master' : 'master'
++          when value == 'ad-hoc' : 'ad-hoc'
++          when value == 'adhoc' : 'ad-hoc'
++          when value == 'monitor' : 'monitor'
++          else
++            raise "Unknown mode '#{value}'. Should be 'managed', or 'ad-hoc'."
++        end
++        return "/sbin/iwconfig #{@deviceName} mode #{value} essid dummy channel 1"
++
++      when "essid"
++        @essid = value
++        return "/sbin/iwconfig #{@deviceName} essid #{value}"
++
++      when "frequency"
++        return "/sbin/iwconfig #{@deviceName} freq #{value}"
++
++      when "tx_power"
++        return "/sbin/iwconfig #{@deviceName} txpower #{value}"
++
++      when "rate"
++        return "/sbin/iwconfig #{@deviceName} rate #{value}"
++
++      when "rts"
++        return "/sbin/iwconfig #{@deviceName} rts #{value}"
++
++      when "channel"
++        return "/sbin/iwconfig #{@deviceName} channel #{value}"
++
++    end
++    super
++  end
++end
+diff -Nur omf-5.2.clean/omf-resctl/sbin/omf-resctl omf-5.2/omf-resctl/sbin/omf-resctl
+--- omf-5.2.clean/omf-resctl/sbin/omf-resctl	2009-11-10 01:11:57.000000000 -0600
++++ omf-5.2/omf-resctl/sbin/omf-resctl	2009-05-27 04:58:04.000000000 -0500
+@@ -24,12 +24,15 @@
+ #
+ #
+ 
+-VER=5.2
+ APP=omf-resctl/nodeAgent.rb
+-if [ -e /usr/share/omf-resctl-$VER/$APP ]; then
+-   PDIR=/usr/share/omf-resctl-$VER
+-else
+-   echo "Cannot find the ruby module location ($APP)."
+-   exit 1;
++if [ -e ../$APP ]; then
++   PDIR=..
++else 
++   if [ -e /usr/lib/ruby/1.8/$APP ]; then
++      PDIR=/usr/lib/ruby/1.8
++   else
++      echo "Cannot find the ruby module location ($APP)."
++      exit 1;
++   fi
+ fi
+-exec ruby1.8 -I$PDIR -I/usr/share/omf-common-$VER $PDIR/$APP $*
+\ No newline at end of file
++exec ruby1.8 -I$PDIR $PDIR/$APP $*
+diff -Nur omf-5.2.clean/omf-resctl/sbin/ssh-auto-connect omf-5.2/omf-resctl/sbin/ssh-auto-connect
+--- omf-5.2.clean/omf-resctl/sbin/ssh-auto-connect	1969-12-31 18:00:00.000000000 -0600
++++ omf-5.2/omf-resctl/sbin/ssh-auto-connect	2009-12-08 23:10:21.000000000 -0600
+@@ -0,0 +1,38 @@
++#!/bin/sh
++#
++# Copyright (c) 2006-2009 National ICT Australia (NICTA), Australia
++#
++# Copyright (c) 2004-2009 WINLAB, Rutgers University, USA
++#
++# Permission is hereby granted, free of charge, to any person obtaining a copy
++# of this software and associated documentation files (the "Software"), to deal
++# in the Software without restriction, including without limitation the rights
++# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++# copies of the Software, and to permit persons to whom the Software is
++# furnished to do so, subject to the following conditions:
++#
++# The above copyright notice and this permission notice shall be included in
++# all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
++# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++# THE SOFTWARE.
++#
++#
++
++APP=omf-resctl/autoSSH.rb
++if [ -e ../$APP ]; then
++   PDIR=..
++else 
++   if [ -e /usr/lib/ruby/1.8/$APP ]; then
++      PDIR=/usr/lib/ruby/1.8
++   else
++      echo "Cannot find the ruby module location ($APP)."
++      exit 1;
++   fi
++fi
++ruby1.8 -I$PDIR $PDIR/$APP $* &

@@ -23,3 +23,7 @@ resctl:
 
 clean:
 	rm -f *.deb *.build *.changes
+	cd omf-resctl && dh_clean
+	cd omf-expctl && dh_clean
+	cd omf-aggmgr && dh_clean
+	cd omf-common && dh_clean

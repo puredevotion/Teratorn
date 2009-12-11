@@ -1,0 +1,51 @@
+Constructing a wireless testbed from wireless-enabled VMs
+CS 707 Project
+Dan McNulty, Tom Baars
+=========================================================
+This directory is the top-level directory of the source
+code repository for this project. 
+
+---Files---
+
+omf/ --> this directory contains the source code for the version of OMF used
+with this project (along with the changes made to OMF, which are roughly
+documented with the patch omf/omf-5.2.patch). For in-depth information about
+OMF, visit the following site: http://omf.mytestbed.net/
+
+vmcontrol-0.9/ --> this directory contains the source code for vmcontrol, a
+network daemon that functions as a watchdog for VMWare virtual machines.  The
+directory contains a README with more information.
+
+results/ --> this directory contains the raw experimental results used to
+evaluate our project.
+
+---Building the source---
+
+While the code for this project doesn't need Debian to run, it is highly
+recommended that Debian be used because the packaging for both vmcontrol and
+OMF is Debian-based. Using Debian for packaging will make your live easier. 
+After you package code, the program alien(1p) might be able to convert the
+.debs into some other type of package such as a .rpm.
+
+Before building the packages of either vmcontrol or OMF, it would be a good
+idea to install the Debian package debhelper.
+
+To build OMF run the following command:
+
+    cd omf/omf-5.2 && make debs
+
+This command will dump .debs in the directory omf/omf-5.2. They can then
+be installed by running the command:
+
+    dpkg -i $(name of deb)
+
+where you subsitute the name of the deb for $(name of deb). Note: the packages
+omf-aggmgr, omf-expctl should be installed on the server (or even separate
+servers, if need be). The package omf-resctl should be installed on all the
+nodes. Finally, omf-common should be installed with any other omf package.
+
+To build vmcontrol run the following command:
+
+    cd vmcontrol-0.9/ && dpkg-buildpackage -rfakeroot
+
+This command will dump .debs in the top-level directory.
