@@ -54,6 +54,7 @@ do_start()
 	# Add code here, if necessary, that waits for the process to be ready
 	# to handle requests from services started subsequently which depend
 	# on this one.  As a last resort, sleep for some time.
+	return 0
 }
 
 #
@@ -70,7 +71,7 @@ do_stop()
 	# vmcontrol listens on a socket for commands, this instructs it to stop
 	$DAEMON -d || return 2
 
-	return "$RETVAL"
+	return 0
 }
 
 case "$1" in
