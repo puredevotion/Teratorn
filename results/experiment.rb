@@ -28,7 +28,7 @@ defGroup('source_node1', [1, property.node1.value ]) {|node|
 	'destinationPort' => 3000,
 	'localHost' => getControlIP(1, property.node1.value ),
 	'localPort' => 3000,
-	'packetSize' => 256,
+	'packetSize' => 256, # bytes
 	'rate' => 250000 # bits per second
     })
 }
@@ -52,7 +52,7 @@ defGroup('source_node2', [1, property.node2.value ]) {|node|
 	'destinationPort' => 4000,
 	'localHost' => getControlIP(1,property.node2.value),
 	'localPort' => 4000,
-	'packetSize' => 256,
+	'packetSize' => 256, # bytes
 	'rate' => 250000 # bits per second
     })
 }

@@ -1,0 +1,9 @@
+
+default:
+	./createMatlabVars.pl data.sq3 > data.m
+	matlab -nodesktop -nojvm -nosplash < graph.m
+
+.PHONY: clean
+
+clean: 
+	rm -f *.png data.m
