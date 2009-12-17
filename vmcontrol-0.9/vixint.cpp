@@ -44,6 +44,14 @@ static int MIN_5 = 60*5;
 static int VMCONNECT_FUDGE = 2; // time to wait before retrying a connection
 static int VMCONNECT_RETRY = 3; // number of times to retry
 
+/**
+ * Get a VixHandle using the specified credentials/location info
+ *
+ * path		Relative path to the vm
+ * user		Username for VMWare
+ * password	Password for VMWare
+ * hostname	The hostname of the host running vmware-hostd
+ */
 static VixHandle getVixHandle(char *path, char *user, char *password, 
 	char *hostname) 
 {
@@ -110,6 +118,13 @@ static VixHandle getVixHandle(char *path, char *user, char *password,
     return vmHandle;
 }
 
+/**
+ * Checks if the specified VM is running
+ *
+ * vmHandle	A handle to the VM
+ *
+ * true, if the VM is running
+ */
 static bool isVMRunning(VixHandle vmHandle) {
     Bool isRunning;
     VixError err = Vix_GetProperties(vmHandle, VIX_PROPERTY_VM_IS_RUNNING,
@@ -125,6 +140,13 @@ static bool isVMRunning(VixHandle vmHandle) {
     return isRunning;
 }
 
+/**
+ * Chekcs if the VM is running using the credentials/location info
+ *
+ * see getVixHandle
+ *
+ * true, if the VM is running
+ */
 bool isVMRunning(char *path, char *user, char *password, char *hostname) {
     VixHandle vmHandle = getVixHandle(path, user, password, hostname);
     if( vmHandle == VIX_INVALID_HANDLE ) {
@@ -153,6 +175,13 @@ static bool isVMToolsInstalled(VixHandle vmHandle) {
 }
 */
 
+/**
+ * Power on the VM using the supplied credentials/location info
+ *
+ * see getVixHandle
+ *
+ * true, if the VM was successfully powered on
+ */
 bool powerOnVM(char *path, char *user, char *password, char *hostname) {
     VixHandle jobHandle = VIX_INVALID_HANDLE;
     VixError err;
@@ -211,6 +240,13 @@ bool powerOnVM(char *path, char *user, char *password, char *hostname) {
     return true;
 }
 
+/**
+ * Power off the VM using the supplied credentials/location info
+ *
+ * see getVMHandle
+ *
+ * true, if the VM was powered off
+ */
 bool powerOffVM(char *path, char *user, char *password, char *hostname) {
     VixError err = VIX_OK;
     VixHandle jobHandle = VIX_INVALID_HANDLE;

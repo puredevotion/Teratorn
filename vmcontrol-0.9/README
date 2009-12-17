@@ -94,7 +94,18 @@ used to estimate the worst-case impact of the virtual machine on the
 performance of the host.
 
 config
-The default config, installed by the Debian package.
+The default config, installed by the Debian package. The syntax is very
+picky in order to make the config file easy to parse. There cannot be
+any spaces between the = and the values.
+
+The valid config options are:
+hostname     # The hostname running vmware-hostd (should be localhost)
+port         # The port to listen on for commands
+remote       # whether to listen on all remote network interfaces
+user         # The username used to connect to VMWare Server
+password     # The password used to connect to VMWare Server
+limit        # > 0 and < 100, the percent of CPU usage for the VM
+vmpath       # The path to the virtual machine relative to the datastore
 
 debian/
 Used in building the Debian package

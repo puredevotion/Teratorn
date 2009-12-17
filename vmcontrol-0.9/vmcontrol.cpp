@@ -101,7 +101,7 @@ static const string OK = "OK";
 static const string END = "\r\n";
 static const string CONFIG_DELIM = "=";
 
-// TODO ssl
+// TODO SSL support for the command socket
 
 static const char *USAGE = 
 " [-n] [-c full_path_config] [-H hostname] [-p port] [-r] -U user -l limit <-u|-d> <vmpath>";
@@ -498,6 +498,18 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
+/**
+ * Cleanup function called through the program
+ *
+ * cmdSocket 		The command socket
+ * main_pipe		The pipe for the main process
+ * password		The password used for the VIX API
+ * cpulimit_pid		The PID for the cpulimit process
+ * signal_fd		The fd used to read signals
+ * sockets		A set of sockets opened in the program
+ *
+ * Always returns 0
+ */
 int die(int cmdSocket, int main_pipe, char *password, int cpulimit_pid,
 	int signal_fd, set<int> &sockets) 
 {
@@ -543,6 +555,16 @@ int die(int cmdSocket, int main_pipe, char *password, int cpulimit_pid,
     return 0;
 }
 
+/**
+ * Launches a separate process for cpulimit functionality
+ *
+ * pid		The pid of the VM
+ * limit	The CPU limit percentage
+ * cpulimitfd	The read end of the bi-dir pipe between the cpulimit and the main process
+ * mainfd	The write end of the bi-dir pipe
+ *
+ * -1, on failure, the cpulimit PID otherwise
+ */
 int launchCPULimit(pid_t pid, int limit, int *cpulimitfd, int *mainfd) {
     int cpulimit_pipe[2];
     int main_pipe[2];
@@ -679,6 +701,19 @@ int launchCPULimit(pid_t pid, int limit, int *cpulimitfd, int *mainfd) {
     return -1;
 }
 
+/**
+ * The main loop of the daemon
+ *
+ * vmPid		The PID for the VM process
+ * limit		The CPU usage limit
+ * checkVMPeriod	How often to check if the VM is still running
+ * port			The port to listen on
+ * local		Whether the command socket should be local or remote
+ * path			The path to the VM (relative to the datastore)
+ * user			The user for VMWare
+ * password		The password for VMWare
+ * hostname		The hostname for VMWare
+ */
 int controlLoop(pid_t vmPid, int limit, int checkVMPeriod, char *port, 
 	bool local, char *path, char *user, char *password, char *hostname) 
 {
@@ -1038,6 +1073,14 @@ int controlLoop(pid_t vmPid, int limit, int checkVMPeriod, char *port,
 	    signal_fd, sockets);
 }
 
+/**
+ * Receive a plain-text command
+ *
+ * socket	The socket to listen on
+ * recvBuf	The received command
+ *
+ * -1, on failure; 0, on closed or reset; size of receive otherwise
+ */
 int recvCommand(int socket, string &recvBuf) 
 {
     const int BLOCK_SIZE = 1024; // 1 KB
@@ -1079,6 +1122,16 @@ int recvCommand(int socket, string &recvBuf)
     return total_recv;
 }
 
+/**
+ * Parse a single token and its value (see format at beginning of file)
+ *
+ * in_cmd	The command to parse
+ * cmd_token	The token to look for
+ * cmd_value	The value of the token (when found)
+ * start_pos	The starting position in the command
+ * 
+ * the position of the value end; -1, on failure; 0, when the command is incomplete
+ */
 int parseCommandToken(string &in_cmd, const string &cmd_token, 
 	string &cmd_value, size_t start_pos) 
 {
@@ -1160,6 +1213,9 @@ int parseConfigLine(FILE *stream, string &option, string &value) {
     return 1;
 }
 
+/**
+ * Forks the current process and establishes the new process as a daemon
+ */
 pid_t daemonize() {
     pid_t retPid;
     if( daemon_reset_sigs(-1) < 0 ) {

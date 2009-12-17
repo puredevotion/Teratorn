@@ -56,11 +56,25 @@ static const string VMX_PID_DELIM = "_";
 
 static const int PASS_INIT_SIZE = 25;
 
+/**
+ * Check if a process is running using pgrep
+ *
+ * command	The command to check for
+ *
+ * true, if the process is running
+ */
 bool pgrep(string &command) {
     string total = PGREP + command;
     return (systemExec(total) == 0);
 }
 
+/**
+ * Execute a command using the system syscall
+ *
+ * command	The command to execute
+ *
+ * the exit status of command
+ */
 int systemExec(string &command) {
     string total = command + string(" >& /dev/null");
 
@@ -73,6 +87,14 @@ int systemExec(string &command) {
     return -1;
 }
 
+/**
+ * Starts the support services for running a virtual machine
+ *
+ * errMsg	The error mesesage, if an error occurred
+ * started	Whether the services were started or not
+ *
+ * true, if the services were started (or were running)
+ */
 bool startServices(string &errMsg, bool &started) {
     // First, check if the services are already running
     if( !pgrep(const_cast<string&>(AUTHD_CMD)) ) {
@@ -97,6 +119,13 @@ bool startServices(string &errMsg, bool &started) {
     return true;
 }
 
+/**
+ * Find the PID of the virtual machine described by the path
+ *
+ * vmPath	The path relative to the datastore
+ *
+ * the PID of the virtual machine, -1 if error
+ */
 pid_t getVMPid(char *vmPath) {
     // Search for VMWare running processes info
     DIR *vmrun;
@@ -223,7 +252,11 @@ pid_t getVMPid(char *vmPath) {
 
     return -1;
 }
-
+/**
+ * Utility function to somewhat securely read a password from stdin
+ *
+ * A pointer to the password (heap-allocated)
+ */
 char *get_password() {
     // Turn off echo
     struct termios orig, no_echo;
@@ -278,6 +311,9 @@ char *get_password() {
     return password;
 }
 
+/**
+ * Zero all characters in a string (zero a password)
+ */
 void zero_string(char *str) {
     while( *str != '\0' ) {
 	*str = '\0';
@@ -285,6 +321,15 @@ void zero_string(char *str) {
     }
 }
 
+/**
+ * Write all the specified data to a file descriptor
+ *
+ * fd		The file descriptor
+ * buf		The buffer of data
+ * size		The size of the data
+ *
+ * 0, on failure, non-zero otherwise
+ */
 int write_all(int fd, void *buf, int size) {
     char *lbuf = static_cast<char *>(buf);
     int num_write = 0, length;
@@ -301,6 +346,15 @@ int write_all(int fd, void *buf, int size) {
     return 1;
 }
 
+/**
+ * Send all the specified data using a socket
+ *
+ * socket	The socket
+ * buf		The buffer of data
+ * size		The size of the buffer
+ *
+ * 0, on failure, non-zero otherwise
+ */
 int send_all(int socket, void *buf, int length) {
     char *lbuf = static_cast<char *>(buf);
     int total_sent = 0, num_sent = -1;
@@ -317,6 +371,15 @@ int send_all(int socket, void *buf, int length) {
     return 1;
 }
 
+/**
+ * Read the specified amount of data into the buffer, blocking if necessary
+ *
+ * fd		The file descriptor to read from
+ * buf		The buffer of data
+ * size		The size of data to read
+ *
+ * -1, on failure; 0, on EOF, 1, otherwise
+ */
 int read_all(int fd, void *buf, int size) {
     char *lbuf = static_cast<char *>(buf);
     int num_read = 0, length = -1;
@@ -336,6 +399,15 @@ int read_all(int fd, void *buf, int size) {
     return 1;
 }
 
+/**
+ * Receive the specified amount of data blocking, if necessary
+ *
+ * socket	The socket to recv from
+ * buf		The buffer of data
+ * size		The size of data to read
+ *
+ * -1 on failure; 0, on closed connection, 1 otherwise
+ */
 int recv_all(int socket, void *buf, int size) {
     char *lbuf = static_cast<char *>(buf);
     int total_read = 0, num_read = -1;
@@ -355,6 +427,14 @@ int recv_all(int socket, void *buf, int size) {
     return 1;
 }
 
+/**
+ * Create a socket using the specified address info
+ *
+ * addr_list	The address list (see getaddrinfo(3))
+ * should_bind	If the socket should be bound
+ *
+ * -1, on failure, the socket otherwise
+ */
 int get_socket(struct addrinfo *addr_list, bool should_bind) {
     int sock_fd;
     if( ( sock_fd = socket(addr_list->ai_family, addr_list->ai_socktype,
